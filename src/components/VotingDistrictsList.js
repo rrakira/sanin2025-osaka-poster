@@ -42,11 +42,11 @@ const VotingDistrictsList = ({
 
   return (
     <div className="voting-districts-container">
-      {/* Google Mapsリンク表（箕面市のみ） */}
-      {city === 'minoo' && mapsLinksData[city] && mapsLinksData[city].length > 0 && (
+      {/* Google Mapsリンク表 */}
+      {mapsLinksData[city] && mapsLinksData[city].length > 0 && (
         <div className="maps-links-section">
           <h2 className="maps-links-title">
-            🗺️ Google Maps リンク
+            🗺️ Google Maps リンク ({city === 'minoo' ? '箕面市' : '吹田市'})
           </h2>
           <table className="maps-links-table">
             <thead>
