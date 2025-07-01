@@ -3,12 +3,14 @@ services:
     name: sanin2025-osaka-poster
     env: node
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: false
 
 databases:
   - name: sanin2025-osaka-poster-db
