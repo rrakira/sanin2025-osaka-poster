@@ -18,7 +18,12 @@ const VotingDistrictsList = ({
       { range: '31-38', url: 'https://www.google.com/maps/d/u/0/edit?mid=1WikfiaU3YKb348Ho31I6o06QR0KuA1A&usp=sharing' }
     ],
     suita: [
-      // 吹田市のリンクは後で追加予定
+      { range: '101-110', url: 'https://www.google.com/maps/d/u/0/edit?mid=1Ot9m7j_ZzSPLGyR0EqOMH_yztiC2CfE&usp=sharing' },
+      { range: '111-133', url: 'https://www.google.com/maps/d/u/0/edit?mid=1cYBM5hzJoY37Xw9gGgheLFFO9bZmApI&usp=sharing' },
+      { range: '134-145', url: 'https://www.google.com/maps/d/u/0/edit?mid=1pTeUw-OJDJGtZxFDk0lyp41lxwPPuK0&usp=sharing' },
+      { range: '151-161', url: 'https://www.google.com/maps/d/u/0/edit?mid=1U45Y7I1QCYdVUvAXIgT-aspnvsWYg2o&usp=sharing' },
+      { range: '162-183', url: 'https://www.google.com/maps/d/u/0/edit?mid=1OE8O_NEk4nY1ede0xi5D_uKYEiOjQG4&usp=sharing' },
+      { range: '184-194', url: 'https://www.google.com/maps/d/u/0/edit?mid=1GpmSpTjw_5hQWm8GZDq4UjdD6vBf7KM&usp=sharing' }
     ]
   };
 
