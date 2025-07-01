@@ -132,54 +132,6 @@ function App() {
     }));
   };
 
-  // データをJSONファイルとしてダウンロード
-  const exportData = () => {
-    const exportData = {
-      checkStates,
-      memos,
-      timestamp: new Date().toISOString(),
-      version: "1.0"
-    };
-    
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'shared-data.json';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  // JSONファイルをインポート
-  const importData = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const importedData = JSON.parse(e.target.result);
-        if (importedData.checkStates && importedData.memos) {
-          setCheckStates(importedData.checkStates);
-          setMemos(importedData.memos);
-          alert('データをインポートしました！');
-        } else {
-          alert('無効なデータファイルです。');
-        }
-      } catch (error) {
-        alert('ファイルの読み込みに失敗しました。');
-      }
-    };
-    reader.readAsText(file);
-    
-    // ファイル選択をリセット
-    event.target.value = '';
-  };
-
   if (loading) {
     return (
       <div className="loading">
@@ -192,7 +144,7 @@ function App() {
   return (
     <div className="App">
       <header className="app-header">
-        <h1>参院選2025 大阪府選挙ポスター貼り付け状況</h1>
+        <h1>参院選2025 大阪府<br />選挙ポスター貼り付け状況</h1>
         <div className="tabs">
           <button 
             className={`tab ${activeTab === 'minoo' ? 'active' : ''}`}
@@ -206,26 +158,6 @@ function App() {
           >
             吹田市
           </button>
-        </div>
-        
-        <div className="data-sharing">
-          <div className="sharing-buttons">
-            <button className="share-button export" onClick={exportData}>
-              📤 データをエクスポート
-            </button>
-            <label className="share-button import">
-              📥 データをインポート
-              <input
-                type="file"
-                accept=".json"
-                onChange={importData}
-                style={{ display: 'none' }}
-              />
-            </label>
-          </div>
-          <p className="sharing-help">
-            💡 エクスポートしたファイルを共有して、チーム間でデータを同期できます
-          </p>
         </div>
       </header>
 

@@ -10,6 +10,7 @@ const VotingDistrict = ({
   onMemoChange 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showDistrictMemo, setShowDistrictMemo] = useState(false);
   
   // 投票区のチェック状態を取得
   const districtKey = `${districtId}-district`;
@@ -63,7 +64,7 @@ const VotingDistrict = ({
 
   // 投票区ヘッダーのクリック処理（トグル）
   const handleHeaderClick = (e) => {
-    if (e.target.type === 'checkbox' || e.target.tagName === 'TEXTAREA') {
+    if (e.target.type === 'checkbox' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON') {
       return;
     }
     setIsExpanded(!isExpanded);
@@ -77,6 +78,13 @@ const VotingDistrict = ({
     }
   }, [districtCheckboxState, districtId]);
 
+  // メモがある場合は自動でメモ欄を表示
+  useEffect(() => {
+    if (districtMemo) {
+      setShowDistrictMemo(true);
+    }
+  }, [districtMemo]);
+
   return (
     <div className="voting-district">
       <div className="district-header" onClick={handleHeaderClick}>
@@ -89,9 +97,19 @@ const VotingDistrict = ({
             onChange={handleDistrictCheckboxChange}
             onClick={(e) => e.stopPropagation()}
           />
-          <h3 className="district-title">
-            投票区 {districtId} ({locations.length}箇所)
-          </h3>
+          <div className="district-info">
+            <h3 className="district-title">
+              投票区 {districtId}
+            </h3>
+            <span className="district-count">
+              {locations.length}箇所
+              {someLocationsChecked && (
+                <span className="progress-indicator">
+                  ({locations.filter(location => checkStates[`${districtId}-${location.number}`]).length}/{locations.length}完了)
+                </span>
+              )}
+            </span>
+          </div>
           <button
             className={`district-toggle ${isExpanded ? 'expanded' : ''}`}
             onClick={(e) => {
@@ -99,18 +117,46 @@ const VotingDistrict = ({
               setIsExpanded(!isExpanded);
             }}
           >
-            ▶
+            ▼
           </button>
         </div>
         
-        <div className="district-memo">
-          <textarea
-            className="memo-input"
-            placeholder="投票区のメモを入力..."
-            value={districtMemo}
-            onChange={handleDistrictMemoChange}
-            onClick={(e) => e.stopPropagation()}
-          />
+        <div className="district-actions">
+          {!showDistrictMemo && (
+            <button
+              className="memo-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDistrictMemo(true);
+              }}
+            >
+              📝 メモを追加
+            </button>
+          )}
+          
+          {showDistrictMemo && (
+            <div className="district-memo">
+              <textarea
+                className="memo-input"
+                placeholder="投票区のメモを入力..."
+                value={districtMemo}
+                onChange={handleDistrictMemoChange}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <button
+                className="memo-close"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!districtMemo) {
+                    setShowDistrictMemo(false);
+                  }
+                }}
+                title="メモを閉じる"
+              >
+                ×
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -142,6 +188,8 @@ const LocationItem = ({
   onCheckboxChange, 
   onMemoChange 
 }) => {
+  const [showMemo, setShowMemo] = useState(false);
+
   const handleCheckboxChange = (e) => {
     onCheckboxChange(location, e.target.checked);
   };
@@ -149,6 +197,13 @@ const LocationItem = ({
   const handleMemoChange = (e) => {
     onMemoChange(location, e.target.value);
   };
+
+  // メモがある場合は自動でメモ欄を表示
+  useEffect(() => {
+    if (memo) {
+      setShowMemo(true);
+    }
+  }, [memo]);
 
   return (
     <div className="location-item">
@@ -168,13 +223,37 @@ const LocationItem = ({
         </div>
       </div>
       
-      <div className="location-memo">
-        <textarea
-          className="memo-input"
-          placeholder="掲示場所のメモを入力..."
-          value={memo}
-          onChange={handleMemoChange}
-        />
+      <div className="location-actions">
+        {!showMemo && (
+          <button
+            className="memo-button small"
+            onClick={() => setShowMemo(true)}
+          >
+            📝 メモ
+          </button>
+        )}
+        
+        {showMemo && (
+          <div className="location-memo">
+            <textarea
+              className="memo-input small"
+              placeholder="メモを入力..."
+              value={memo}
+              onChange={handleMemoChange}
+            />
+            <button
+              className="memo-close"
+              onClick={() => {
+                if (!memo) {
+                  setShowMemo(false);
+                }
+              }}
+              title="メモを閉じる"
+            >
+              ×
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
