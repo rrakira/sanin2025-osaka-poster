@@ -32,6 +32,41 @@ const VotingDistrictsList = ({
     ? Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b))
     : [];
 
+  // 進捗状況を計算
+  const calculateProgress = () => {
+    if (!data || sortedDistricts.length === 0) {
+      return { completed: 0, total: 0, percentage: 0 };
+    }
+
+    let totalLocations = 0;
+    let completedLocations = 0;
+
+    // 全投票区の全掲示場所をカウント
+    sortedDistricts.forEach(districtId => {
+      const locations = data[districtId] || [];
+      totalLocations += locations.length;
+      
+      // チェック済みの掲示場所をカウント
+      locations.forEach(location => {
+        const locationKey = `${districtId}-${location.number}`;
+        if (checkStates[locationKey]) {
+          completedLocations++;
+        }
+      });
+    });
+
+    const percentage = totalLocations > 0 ? Math.round((completedLocations / totalLocations) * 100) : 0;
+    
+    return {
+      completed: completedLocations,
+      total: totalLocations,
+      percentage: percentage
+    };
+  };
+
+  const progress = calculateProgress();
+  const cityName = city === 'minoo' ? '箕面市' : '吹田市';
+
   if (!data || sortedDistricts.length === 0) {
     return (
       <div className="no-data">
@@ -42,11 +77,37 @@ const VotingDistrictsList = ({
 
   return (
     <div className="voting-districts-container">
+      {/* 進捗状況表示 */}
+      <div className="progress-section">
+        <h2 className="progress-title">
+          📊 {cityName} 進捗状況
+        </h2>
+        <div className="progress-info">
+          <div className="progress-stats">
+            <span className="progress-text">
+              {progress.completed}/{progress.total} 箇所完了 ({progress.percentage}%)
+            </span>
+          </div>
+          <div className="progress-bar-container">
+            <div className="progress-bar">
+              <div 
+                className="progress-bar-fill"
+                style={{ width: `${progress.percentage}%` }}
+              >
+                <span className="progress-bar-text">
+                  {progress.percentage}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Google Mapsリンク表 */}
       {mapsLinksData[city] && mapsLinksData[city].length > 0 && (
         <div className="maps-links-section">
           <h2 className="maps-links-title">
-            🗺️ Google Maps リンク ({city === 'minoo' ? '箕面市' : '吹田市'})
+            🗺️ Google Maps リンク ({cityName})
           </h2>
           <table className="maps-links-table">
             <thead>

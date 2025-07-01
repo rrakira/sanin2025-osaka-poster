@@ -64,6 +64,88 @@
   margin-bottom: 2rem;
 }
 
+.progress-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 0.75rem;
+  color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.progress-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+}
+
+.progress-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.progress-bar-container {
+  position: relative;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  backdrop-filter: blur(10px);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #48bb78 0%, #38a169 100%);
+  border-radius: 12px;
+  transition: width 0.5s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar-text {
+  position: absolute;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  text-align: center;
+  z-index: 2;
+}
+
+.progress-bar-fill[style*="width: 0%"] .progress-bar-text,
+.progress-bar-fill[style*="width: 1%"] .progress-bar-text,
+.progress-bar-fill[style*="width: 2%"] .progress-bar-text,
+.progress-bar-fill[style*="width: 3%"] .progress-bar-text,
+.progress-bar-fill[style*="width: 4%"] .progress-bar-text {
+  display: none;
+}
+
 .maps-links-section {
   margin-bottom: 2rem;
   padding: 1.5rem;
@@ -435,6 +517,32 @@
     padding: 1rem;
   }
 
+  .progress-section {
+    padding: 1rem;
+  }
+
+  .progress-info {
+    gap: 0.5rem;
+  }
+
+  .progress-stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .progress-text {
+    font-size: 0.9rem;
+  }
+
+  .progress-bar {
+    height: 20px;
+  }
+
+  .progress-bar-text {
+    font-size: 0.7rem;
+  }
+
   .maps-links-section {
     padding: 1rem;
   }
@@ -481,6 +589,26 @@
   .tab {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
+  }
+
+  .progress-section {
+    padding: 0.75rem;
+  }
+
+  .progress-title {
+    font-size: 1.1rem;
+  }
+
+  .progress-text {
+    font-size: 0.85rem;
+  }
+
+  .progress-bar {
+    height: 18px;
+  }
+
+  .progress-bar-text {
+    font-size: 0.65rem;
   }
 
   .district-header {
