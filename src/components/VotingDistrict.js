@@ -10,7 +10,8 @@ const VotingDistrict = ({
   onMemoChange 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [showDistrictMemo, setShowDistrictMemo] = useState(false);
+  const [showMemos, setShowMemos] = useState({});
+  const [copySuccess, setCopySuccess] = useState({});
   
   // 投票区のチェック状態を取得
   const districtKey = `${districtId}-district`;
@@ -81,9 +82,43 @@ const VotingDistrict = ({
   // メモがある場合は自動でメモ欄を表示
   useEffect(() => {
     if (districtMemo) {
-      setShowDistrictMemo(true);
+      setShowMemos(prev => ({ ...prev, [`district-${districtId}`]: true }));
     }
-  }, [districtMemo]);
+  }, [districtMemo, districtId]);
+
+  // 住所をクリップボードにコピー
+  const copyAddress = async (address, locationId) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopySuccess(prev => ({ ...prev, [locationId]: true }));
+      setTimeout(() => {
+        setCopySuccess(prev => ({ ...prev, [locationId]: false }));
+      }, 2000);
+    } catch (err) {
+      console.error('コピーに失敗しました:', err);
+      // フォールバック: テキスト選択
+      const textArea = document.createElement('textarea');
+      textArea.value = address;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopySuccess(prev => ({ ...prev, [locationId]: true }));
+        setTimeout(() => {
+          setCopySuccess(prev => ({ ...prev, [locationId]: false }));
+        }, 2000);
+      } catch (fallbackErr) {
+        console.error('フォールバックコピーも失敗しました:', fallbackErr);
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
+  const checkedCount = locations.filter(location => 
+    checkStates[`${districtId}-${location.number}`]
+  ).length;
+
+  const shouldShowDistrictMemo = showMemos[`district-${districtId}`] || districtMemo;
 
   return (
     <div className="voting-district">
@@ -105,7 +140,7 @@ const VotingDistrict = ({
               {locations.length}箇所
               {someLocationsChecked && (
                 <span className="progress-indicator">
-                  ({locations.filter(location => checkStates[`${districtId}-${location.number}`]).length}/{locations.length}完了)
+                  ({checkedCount}/{locations.length}完了)
                 </span>
               )}
             </span>
@@ -122,19 +157,19 @@ const VotingDistrict = ({
         </div>
         
         <div className="district-actions">
-          {!showDistrictMemo && (
+          {!shouldShowDistrictMemo && (
             <button
               className="memo-button"
               onClick={(e) => {
                 e.stopPropagation();
-                setShowDistrictMemo(true);
+                setShowMemos(prev => ({ ...prev, [`district-${districtId}`]: true }));
               }}
             >
               📝 メモを追加
             </button>
           )}
           
-          {showDistrictMemo && (
+          {shouldShowDistrictMemo && (
             <div className="district-memo">
               <textarea
                 className="memo-input"
@@ -148,7 +183,7 @@ const VotingDistrict = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!districtMemo) {
-                    setShowDistrictMemo(false);
+                    setShowMemos(prev => ({ ...prev, [`district-${districtId}`]: false }));
                   }
                 }}
                 title="メモを閉じる"
@@ -162,99 +197,78 @@ const VotingDistrict = ({
 
       {isExpanded && (
         <div className="locations-list">
-          {locations.map(location => (
-            <LocationItem
-              key={location.number}
-              location={location}
-              districtId={districtId}
-              isChecked={checkStates[`${districtId}-${location.number}`] || false}
-              memo={memos[`${districtId}-${location.number}`] || ''}
-              onCheckboxChange={handleLocationCheckboxChange}
-              onMemoChange={handleLocationMemoChange}
-            />
-          ))}
+          {locations.map(location => {
+            const locationKey = `${districtId}-${location.number}`;
+            const locationMemoKey = `${districtId}-${location.number}`;
+            const hasLocationMemo = memos[locationMemoKey] && memos[locationMemoKey].trim() !== '';
+            const shouldShowLocationMemo = showMemos[`location-${locationKey}`] || hasLocationMemo;
+
+            return (
+              <div key={location.number} className="location-item">
+                <div className="location-header">
+                  <input
+                    type="checkbox"
+                    className="location-checkbox"
+                    checked={checkStates[locationKey] || false}
+                    onChange={(e) => handleLocationCheckboxChange(location, e.target.checked)}
+                  />
+                  <div className="location-info">
+                    <div className="location-name">{location.name}</div>
+                    <div className="location-address">{location.address}</div>
+                    <button
+                      className={`copy-address-btn ${copySuccess[locationKey] ? 'copied' : ''}`}
+                      onClick={() => copyAddress(location.address, locationKey)}
+                      title="住所をクリップボードにコピー"
+                    >
+                      {copySuccess[locationKey] ? '✅ コピー済み' : '📍 住所をコピー'}
+                    </button>
+                    {location.remark && (
+                      <div className="location-remark">備考: {location.remark}</div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="location-actions">
+                  {!shouldShowLocationMemo && (
+                    <button
+                      className="memo-button small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMemos(prev => ({ ...prev, [`location-${locationKey}`]: true }));
+                      }}
+                    >
+                      📝 メモを追加
+                    </button>
+                  )}
+                </div>
+
+                {shouldShowLocationMemo && (
+                  <div className="location-memo">
+                    <textarea
+                      className="memo-input small"
+                      placeholder="メモを入力..."
+                      value={memos[locationMemoKey] || ''}
+                      onChange={(e) => handleLocationMemoChange(location, e.target.value)}
+                    />
+                    <button
+                      className="memo-close"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!memos[locationMemoKey]) {
+                          setShowMemos(prev => ({ ...prev, [`location-${locationKey}`]: false }));
+                        }
+                      }}
+                      title="メモを閉じる"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
-    </div>
-  );
-};
-
-// 掲示場所アイテムコンポーネント
-const LocationItem = ({ 
-  location, 
-  districtId, 
-  isChecked, 
-  memo, 
-  onCheckboxChange, 
-  onMemoChange 
-}) => {
-  const [showMemo, setShowMemo] = useState(false);
-
-  const handleCheckboxChange = (e) => {
-    onCheckboxChange(location, e.target.checked);
-  };
-
-  const handleMemoChange = (e) => {
-    onMemoChange(location, e.target.value);
-  };
-
-  // メモがある場合は自動でメモ欄を表示
-  useEffect(() => {
-    if (memo) {
-      setShowMemo(true);
-    }
-  }, [memo]);
-
-  return (
-    <div className="location-item">
-      <div className="location-header">
-        <input
-          type="checkbox"
-          className="location-checkbox"
-          checked={isChecked}
-          onChange={handleCheckboxChange}
-        />
-        <div className="location-info">
-          <div className="location-name">{location.name}</div>
-          <div className="location-address">{location.address}</div>
-          {location.remark && (
-            <div className="location-remark">備考: {location.remark}</div>
-          )}
-        </div>
-      </div>
-      
-      <div className="location-actions">
-        {!showMemo && (
-          <button
-            className="memo-button small"
-            onClick={() => setShowMemo(true)}
-          >
-            📝 メモ
-          </button>
-        )}
-        
-        {showMemo && (
-          <div className="location-memo">
-            <textarea
-              className="memo-input small"
-              placeholder="メモを入力..."
-              value={memo}
-              onChange={handleMemoChange}
-            />
-            <button
-              className="memo-close"
-              onClick={() => {
-                if (!memo) {
-                  setShowMemo(false);
-                }
-              }}
-              title="メモを閉じる"
-            >
-              ×
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 };

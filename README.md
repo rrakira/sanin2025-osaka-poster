@@ -1,6 +1,6 @@
 # 参院選2025 大阪府選挙ポスター貼り付け状況
 
-選挙ポスターの貼り付け状況を管理・共有するためのWebアプリケーションです。
+選挙ポスターの貼り付け状況をチーム間でリアルタイム共有するためのWebアプリケーションです。
 
 ## 機能
 
@@ -11,66 +11,64 @@
   - 個別掲示場所のチェック管理
   - 部分的にチェックされた投票区の中間状態表示
 - **メモ機能**: 投票区および各掲示場所にメモを追記
-- **データ共有**: チーム間でのデータ同期
-- **データ永続化**: ブラウザのローカルストレージに状態を保存
-
-## データ共有機能
-
-### 🔄 シンプルな共有方法
-
-**ファイルベースの共有** (推奨)
-1. **データをエクスポート**: 現在の状態をJSONファイルとしてダウンロード
-2. **ファイル共有**: SlackやEmailでJSONファイルを送信
-3. **データをインポート**: 受け取ったJSONファイルを読み込み
-
-### 🎯 GitHubを使った自動同期 (上級者向け)
-
-より高度な自動同期を行う場合：
-
-1. **Render.comでサイトをデプロイ**
-2. **GitHubリポジトリの`public/shared-data.json`を更新**
-3. **自動的に全ユーザーに反映**
-
-#### GitHubでの手順:
-```bash
-# 1. データをエクスポート
-# 2. ダウンロードしたファイルをGitHubリポジトリにアップロード
-git add public/shared-data.json
-git commit -m "Update shared data"
-git push origin main
-# 3. Render.comが自動デプロイ
-# 4. 数分後、全ユーザーに最新データが反映
-```
+- **リアルタイム共有**: データベースを使用したチーム間でのデータ同期
+- **レスポンシブデザイン**: スマートフォン対応UI
 
 ## 技術仕様
 
 - **フロントエンド**: React 18
+- **バックエンド**: Node.js + Express
+- **データベース**: PostgreSQL
 - **スタイリング**: CSS3 (カスタムスタイル)
-- **データ形式**: CSV → JSON変換
-- **データ共有**: JSON Export/Import + GitHub連携
-- **ホスティング**: Render.com (静的サイト)
-- **データベース**: 不要 (ファイルベース)
+- **ホスティング**: Render.com (Web Service + PostgreSQL)
 
-## データ構造
+## アーキテクチャ
 
-CSVファイルの構造:
 ```
-投票区,番号,住所,備考,名称
+[React Frontend] ←→ [Express API Server] ←→ [PostgreSQL Database]
+      ↓                    ↓                      ↓
+   UI/UX制御         REST API提供          データ永続化
 ```
 
-共有データファイル構造:
+## データベーススキーマ
+
+```sql
+CREATE TABLE poster_states (
+  id SERIAL PRIMARY KEY,
+  city VARCHAR(10) NOT NULL,           -- 'minoo' or 'suita'
+  district_id VARCHAR(10) NOT NULL,    -- 投票区ID
+  location_id VARCHAR(10),             -- 掲示場所ID (NULL=投票区全体)
+  is_checked BOOLEAN DEFAULT FALSE,    -- チェック状態
+  memo TEXT DEFAULT '',               -- メモ内容
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(city, district_id, location_id)
+);
+```
+
+## API エンドポイント
+
+### GET `/api/states/:city`
+指定した市のチェック状態とメモを取得
+
+### POST `/api/states/check`
+チェック状態を更新
 ```json
 {
-  "checkStates": {
-    "minoo": {},
-    "suita": {}
-  },
-  "memos": {
-    "minoo": {},
-    "suita": {}
-  },
-  "timestamp": "2024-01-01T00:00:00.000Z",
-  "version": "1.0"
+  "city": "minoo",
+  "districtId": "1",
+  "locationId": "1",
+  "isChecked": true
+}
+```
+
+### POST `/api/states/memo`
+メモを更新
+```json
+{
+  "city": "minoo", 
+  "districtId": "1",
+  "locationId": "1",
+  "memo": "作業完了"
 }
 ```
 
@@ -78,18 +76,52 @@ CSVファイルの構造:
 
 ### 開発環境
 
+1. **依存関係のインストール**
 ```bash
 npm install
-npm start
+```
+
+2. **環境変数の設定**
+```bash
+# .envファイルを作成
+NODE_ENV=development
+PORT=5000
+DATABASE_URL=postgresql://username:password@localhost:5432/poster_app
+```
+
+3. **PostgreSQLデータベースの準備**
+```bash
+# ローカルでPostgreSQLを起動
+# データベースは自動的に初期化されます
+```
+
+4. **開発サーバー起動**
+```bash
+# フロントエンドとバックエンドを同時起動
+npm run dev
+
+# または個別起動
+npm run server  # バックエンドのみ
+npm run client  # フロントエンドのみ
 ```
 
 ### 本番環境デプロイ (Render.com)
 
-1. Render.comにリポジトリを接続
-2. 設定:
-   - Build Command: `npm install && npm run build`
-   - Publish Directory: `build`
-   - Environment: `Node`
+1. **GitHubリポジトリを準備**
+```bash
+git add .
+git commit -m "Add database integration"
+git push origin main
+```
+
+2. **Render.comでサービスを作成**
+   - Web Service を選択
+   - GitHubリポジトリを接続
+   - `render.yaml`で自動設定される
+
+3. **PostgreSQLデータベースを接続**
+   - Render.comが自動的にDATABASE_URL環境変数を設定
+   - アプリ起動時にテーブルが自動作成される
 
 ## 使用方法
 
@@ -100,22 +132,43 @@ npm start
 3. **チェック管理**: 
    - 投票区チェックボックス: その投票区の全掲示場所を一括管理
    - 掲示場所チェックボックス: 個別の進捗管理
-4. **メモ入力**: 各項目のテキストエリアに注意事項や進捗メモを記入
+4. **メモ入力**: 「📝 メモを追加」ボタンでメモ欄を表示
 
-### データ共有
+### チーム運用
 
-1. **エクスポート**: 「📤 データをエクスポート」ボタンで現在の状態をダウンロード
-2. **共有**: ダウンロードしたJSONファイルをチームメンバーに送信
-3. **インポート**: 「📥 データをインポート」ボタンで受け取ったファイルを読み込み
-
-### チーム運用のベストプラクティス
-
-- **定期更新**: 作業終了時にデータをエクスポートして共有
-- **命名規則**: ファイル名に日時を含める (例: `shared-data-2025-01-15-1430.json`)
-- **バックアップ**: 重要な節目でデータをバックアップ保存
+- **リアルタイム同期**: チェックやメモの変更は即座にデータベースに保存
+- **複数ユーザー**: 同時に複数人が作業可能
+- **データ永続化**: ブラウザを閉じても状態が保持
+- **履歴管理**: updated_atで最終更新時刻を記録
 
 ## データファイル
 
-- `public/minoo.csv`: 箕面市の掲示場所データ
-- `public/suita.csv`: 吹田市の掲示場所データ
-- `public/shared-data.json`: 共有データ (チェック状況・メモ) 
+- `public/minoo.csv`: 箕面市の掲示場所データ (273箇所)
+- `public/suita.csv`: 吹田市の掲示場所データ (442箇所)
+
+## 環境変数
+
+### 本番環境 (Render.com)
+- `NODE_ENV=production`
+- `DATABASE_URL` (自動設定)
+
+### 開発環境
+- `NODE_ENV=development`
+- `PORT=5000`
+- `DATABASE_URL=postgresql://...`
+
+## トラブルシューティング
+
+### データベース接続エラー
+```bash
+# ログを確認
+npm start
+
+# DATABASE_URLが正しく設定されているか確認
+echo $DATABASE_URL
+```
+
+### API通信エラー
+- ネットワーク接続を確認
+- ブラウザの開発者ツールでエラーログを確認
+- サーバーログでエラー詳細を確認 

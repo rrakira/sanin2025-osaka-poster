@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import VotingDistrictsList from './components/VotingDistrictsList';
 import './App.css';
 
+const API_BASE_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000';
+
 function App() {
   const [activeTab, setActiveTab] = useState('minoo');
   const [data, setData] = useState({ minoo: [], suita: [] });
@@ -18,7 +20,6 @@ function App() {
   // CSVデータをJSONに変換する関数
   const csvToJson = (csvText) => {
     const lines = csvText.trim().split('\n');
-    const headers = lines[0].split(',');
     
     const result = {};
     
@@ -41,20 +42,20 @@ function App() {
     return result;
   };
 
-  // 共有データを読み込む関数
-  const loadSharedData = async () => {
+  // APIから状態データを読み込む
+  const loadStatesFromAPI = async (city) => {
     try {
-      const response = await fetch('/shared-data.json');
+      const response = await fetch(`${API_BASE_URL}/api/states/${city}`);
       if (response.ok) {
-        const sharedData = await response.json();
-        setCheckStates(sharedData.checkStates || { minoo: {}, suita: {} });
-        setMemos(sharedData.memos || { minoo: {}, suita: {} });
-        console.log('共有データを読み込みました');
+        const data = await response.json();
+        return data;
       } else {
-        console.log('共有データが見つかりません。ローカルデータを使用します。');
+        console.error('API状態取得エラー:', response.status);
+        return { checkStates: {}, memos: {} };
       }
     } catch (error) {
-      console.log('共有データの読み込みに失敗しました。ローカルデータを使用します。');
+      console.error('API接続エラー:', error);
+      return { checkStates: {}, memos: {} };
     }
   };
 
@@ -78,20 +79,21 @@ function App() {
           suita: suitaData
         });
         
-        // 共有データを読み込み
-        await loadSharedData();
+        // APIから状態データを読み込み
+        const [minooStates, suitaStates] = await Promise.all([
+          loadStatesFromAPI('minoo'),
+          loadStatesFromAPI('suita')
+        ]);
         
-        // ローカルストレージから状態を復元（フォールバック）
-        const savedCheckStates = localStorage.getItem('posterCheckStates');
-        const savedMemos = localStorage.getItem('posterMemos');
+        setCheckStates({
+          minoo: minooStates.checkStates || {},
+          suita: suitaStates.checkStates || {}
+        });
         
-        if (savedCheckStates && Object.keys(checkStates.minoo).length === 0 && Object.keys(checkStates.suita).length === 0) {
-          setCheckStates(JSON.parse(savedCheckStates));
-        }
-        
-        if (savedMemos && Object.keys(memos.minoo).length === 0 && Object.keys(memos.suita).length === 0) {
-          setMemos(JSON.parse(savedMemos));
-        }
+        setMemos({
+          minoo: minooStates.memos || {},
+          suita: suitaStates.memos || {}
+        });
         
         setLoading(false);
       } catch (error) {
@@ -103,16 +105,56 @@ function App() {
     loadData();
   }, []);
 
-  // 状態変更を保存
-  useEffect(() => {
-    localStorage.setItem('posterCheckStates', JSON.stringify(checkStates));
-  }, [checkStates]);
+  // チェック状態をAPIに送信
+  const updateCheckStateAPI = async (city, districtId, locationId, checked) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/states/check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          city,
+          districtId,
+          locationId,
+          isChecked: checked
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('チェック状態更新エラー:', response.status);
+      }
+    } catch (error) {
+      console.error('API通信エラー:', error);
+    }
+  };
 
-  useEffect(() => {
-    localStorage.setItem('posterMemos', JSON.stringify(memos));
-  }, [memos]);
+  // メモをAPIに送信
+  const updateMemoAPI = async (city, districtId, locationId, memo) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/states/memo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          city,
+          districtId,
+          locationId,
+          memo
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('メモ更新エラー:', response.status);
+      }
+    } catch (error) {
+      console.error('API通信エラー:', error);
+    }
+  };
 
   const updateCheckState = (city, districtId, locationId, checked) => {
+    // ローカル状態を即座に更新
     setCheckStates(prev => ({
       ...prev,
       [city]: {
@@ -120,9 +162,13 @@ function App() {
         [`${districtId}-${locationId || 'district'}`]: checked
       }
     }));
+    
+    // APIに送信（非同期）
+    updateCheckStateAPI(city, districtId, locationId, checked);
   };
 
   const updateMemo = (city, districtId, locationId, memo) => {
+    // ローカル状態を即座に更新
     setMemos(prev => ({
       ...prev,
       [city]: {
@@ -130,6 +176,9 @@ function App() {
         [`${districtId}-${locationId || 'district'}`]: memo
       }
     }));
+    
+    // APIに送信（非同期）
+    updateMemoAPI(city, districtId, locationId, memo);
   };
 
   if (loading) {
