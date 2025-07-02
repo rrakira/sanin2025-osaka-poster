@@ -23,8 +23,38 @@ const VotingDistrict = ({
   const districtCommentKey = districtKey; // `${districtId}-district`と同じ
   
   // 投票区のコメントを取得（配列形式）
-  const districtComments = Array.isArray(memos[districtCommentKey]) ? memos[districtCommentKey] : 
-    (memos[districtCommentKey] ? [{ id: '1', text: memos[districtCommentKey], timestamp: new Date().toISOString() }] : []);
+  const getCommentsFromData = (data) => {
+    if (Array.isArray(data)) {
+      return data;
+    }
+    
+    if (typeof data === 'string') {
+      try {
+        // JSON文字列として解析を試行
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+        // パースできたがオブジェクトの場合は配列として扱う
+        if (typeof parsed === 'object' && parsed !== null) {
+          return [{ id: '1', text: JSON.stringify(parsed), timestamp: new Date().toISOString() }];
+        }
+        // パースできたが配列でもオブジェクトでもない場合
+        return [{ id: '1', text: String(parsed), timestamp: new Date().toISOString() }];
+      } catch (e) {
+        // JSON解析に失敗した場合は文字列として扱う
+        return [{ id: '1', text: data, timestamp: new Date().toISOString() }];
+      }
+    }
+    
+    if (data && typeof data === 'object') {
+      return [{ id: '1', text: JSON.stringify(data), timestamp: new Date().toISOString() }];
+    }
+    
+    return [];
+  };
+
+  const districtComments = getCommentsFromData(memos[districtCommentKey]);
   
   // 全ての掲示場所がチェック済みかどうかを確認
   const allLocationsChecked = locations.every(location => {
@@ -99,17 +129,7 @@ const VotingDistrict = ({
     if (!text.trim()) return;
 
     // 既存のコメントを配列形式に変換
-    let currentComments = [];
-    if (Array.isArray(memos[key])) {
-      currentComments = memos[key];
-    } else if (memos[key] && typeof memos[key] === 'string') {
-      // 既存の文字列メモを配列に変換
-      currentComments = [{
-        id: '1',
-        text: memos[key],
-        timestamp: new Date().toISOString()
-      }];
-    }
+    const currentComments = getCommentsFromData(memos[key]);
 
     const newComment = {
       id: Date.now().toString(),
@@ -136,17 +156,7 @@ const VotingDistrict = ({
     if (!newText.trim()) return;
 
     // 既存のコメントを配列形式に変換
-    let currentComments = [];
-    if (Array.isArray(memos[key])) {
-      currentComments = memos[key];
-    } else if (memos[key] && typeof memos[key] === 'string') {
-      // 既存の文字列メモを配列に変換
-      currentComments = [{
-        id: '1',
-        text: memos[key],
-        timestamp: new Date().toISOString()
-      }];
-    }
+    const currentComments = getCommentsFromData(memos[key]);
 
     const updatedComments = currentComments.map(comment => 
       comment.id === commentId 
@@ -170,17 +180,7 @@ const VotingDistrict = ({
     if (!window.confirm('このコメントを削除しますか？')) return;
 
     // 既存のコメントを配列形式に変換
-    let currentComments = [];
-    if (Array.isArray(memos[key])) {
-      currentComments = memos[key];
-    } else if (memos[key] && typeof memos[key] === 'string') {
-      // 既存の文字列メモを配列に変換
-      currentComments = [{
-        id: '1',
-        text: memos[key],
-        timestamp: new Date().toISOString()
-      }];
-    }
+    const currentComments = getCommentsFromData(memos[key]);
 
     const updatedComments = currentComments.filter(comment => comment.id !== commentId);
     
@@ -422,8 +422,7 @@ const VotingDistrict = ({
           {locations.map(location => {
             const locationKey = `${districtId}-${location.number}`;
             const locationCheckData = checkStates[locationKey] || { checked: false, lastUpdated: null };
-            const locationComments = Array.isArray(memos[locationKey]) ? memos[locationKey] : 
-              (memos[locationKey] ? [{ id: '1', text: memos[locationKey], timestamp: new Date().toISOString() }] : []);
+            const locationComments = getCommentsFromData(memos[locationKey]);
             const isAddingLocationComment = editingComments[`${locationKey}-new`];
 
             return (

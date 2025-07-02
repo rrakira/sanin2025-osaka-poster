@@ -59,7 +59,13 @@ app.get('/api/states/:city', async (req, res) => {
       const key = row.location_id ? `${row.district_id}-${row.location_id}` : `${row.district_id}-district`;
       checkStates[key] = row.is_checked;
       if (row.memo) {
-        memos[key] = row.memo;
+        try {
+          // メモがJSON配列として保存されている場合はパースする
+          memos[key] = JSON.parse(row.memo);
+        } catch (e) {
+          // JSON形式でない場合（古いデータ）は文字列として扱う
+          memos[key] = row.memo;
+        }
       }
     });
     
@@ -96,6 +102,16 @@ app.post('/api/states/memo', async (req, res) => {
   try {
     const { city, districtId, locationId, memo } = req.body;
     
+    // メモデータをJSON文字列として保存
+    let memoString;
+    if (Array.isArray(memo)) {
+      memoString = JSON.stringify(memo);
+    } else if (typeof memo === 'object' && memo !== null) {
+      memoString = JSON.stringify(memo);
+    } else {
+      memoString = memo;
+    }
+    
     await pool.query(`
       INSERT INTO poster_states (city, district_id, location_id, memo, updated_at)
       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
@@ -103,11 +119,91 @@ app.post('/api/states/memo', async (req, res) => {
       DO UPDATE SET 
         memo = $4,
         updated_at = CURRENT_TIMESTAMP
-    `, [city, districtId, locationId || null, memo]);
+    `, [city, districtId, locationId || null, memoString]);
     
     res.json({ success: true });
   } catch (err) {
     console.error('メモ更新エラー:', err);
+    res.status(500).json({ error: 'データベースエラー' });
+  }
+});
+
+// 破損したコメントデータをクリーンアップ
+app.post('/api/cleanup/comments', async (req, res) => {
+  try {
+    // 全ての記録を取得
+    const result = await pool.query('SELECT * FROM poster_states WHERE memo IS NOT NULL AND memo != \'\'');
+    
+    let cleanupCount = 0;
+    
+    for (const row of result.rows) {
+      try {
+        // メモがJSON配列として正しく解析できるかチェック
+        const parsed = JSON.parse(row.memo);
+        
+        // 既に正しい配列の場合はスキップ
+        if (Array.isArray(parsed) && parsed.every(item => 
+          typeof item === 'object' && 
+          item.id && 
+          item.text && 
+          item.timestamp
+        )) {
+          continue;
+        }
+        
+        // 破損したデータの場合はクリーンアップ
+        let cleanedComments = [];
+        
+        if (typeof parsed === 'string') {
+          // 文字列の場合は単一コメントとして扱う
+          cleanedComments = [{
+            id: '1',
+            text: parsed,
+            timestamp: new Date().toISOString()
+          }];
+        } else {
+          // その他の場合は文字列化してコメントにする
+          cleanedComments = [{
+            id: '1',
+            text: '破損したデータを復旧しました',
+            timestamp: new Date().toISOString()
+          }];
+        }
+        
+        // クリーンアップしたデータを保存
+        await pool.query(`
+          UPDATE poster_states 
+          SET memo = $1, updated_at = CURRENT_TIMESTAMP 
+          WHERE id = $2
+        `, [JSON.stringify(cleanedComments), row.id]);
+        
+        cleanupCount++;
+        
+      } catch (parseError) {
+        // JSON解析エラーの場合は文字列として保持
+        const cleanedComments = [{
+          id: '1',
+          text: row.memo,
+          timestamp: new Date().toISOString()
+        }];
+        
+        await pool.query(`
+          UPDATE poster_states 
+          SET memo = $1, updated_at = CURRENT_TIMESTAMP 
+          WHERE id = $2
+        `, [JSON.stringify(cleanedComments), row.id]);
+        
+        cleanupCount++;
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      message: `${cleanupCount}件のコメントデータをクリーンアップしました。`,
+      cleanupCount 
+    });
+  } catch (err) {
+    console.error('コメントクリーンアップエラー:', err);
     res.status(500).json({ error: 'データベースエラー' });
   }
 });
