@@ -16,7 +16,8 @@ const VotingDistrict = ({
   
   // 投票区のチェック状態を取得
   const districtKey = `${districtId}-district`;
-  const isDistrictChecked = checkStates[districtKey] || false;
+  const districtCheckData = checkStates[districtKey] || { checked: false, lastUpdated: null };
+  const isDistrictChecked = districtCheckData.checked || false;
   
   // 投票区のコメントキー（統一）
   const districtCommentKey = districtKey; // `${districtId}-district`と同じ
@@ -26,14 +27,16 @@ const VotingDistrict = ({
     (memos[districtCommentKey] ? [{ id: '1', text: memos[districtCommentKey], timestamp: new Date().toISOString() }] : []);
   
   // 全ての掲示場所がチェック済みかどうかを確認
-  const allLocationsChecked = locations.every(location => 
-    checkStates[`${districtId}-${location.number}`] || false
-  );
+  const allLocationsChecked = locations.every(location => {
+    const checkData = checkStates[`${districtId}-${location.number}`];
+    return checkData?.checked || false;
+  });
   
   // 一部の掲示場所がチェック済みかどうかを確認
-  const someLocationsChecked = locations.some(location => 
-    checkStates[`${districtId}-${location.number}`] || false
-  );
+  const someLocationsChecked = locations.some(location => {
+    const checkData = checkStates[`${districtId}-${location.number}`];
+    return checkData?.checked || false;
+  });
 
   // 投票区チェックボックスの状態を計算
   const districtCheckboxState = allLocationsChecked ? 'checked' : 
@@ -43,6 +46,14 @@ const VotingDistrict = ({
   const handleDistrictCheckboxChange = (e) => {
     e.stopPropagation();
     const shouldCheck = !allLocationsChecked;
+    
+    // 確認ポップアップを表示
+    const action = shouldCheck ? 'チェックを入れます' : 'チェックを外します';
+    const message = `投票区 ${districtId} の全ての掲示場所（${locations.length}箇所）に${action}。よろしいですか？`;
+    
+    if (!window.confirm(message)) {
+      return; // キャンセルされた場合は処理を中止
+    }
     
     // 投票区のチェック状態を更新
     onCheckStateChange(city, districtId, null, shouldCheck);
@@ -231,9 +242,10 @@ const VotingDistrict = ({
     }
   };
 
-  const checkedCount = locations.filter(location => 
-    checkStates[`${districtId}-${location.number}`]
-  ).length;
+  const checkedCount = locations.filter(location => {
+    const checkData = checkStates[`${districtId}-${location.number}`];
+    return checkData?.checked || false;
+  }).length;
 
   const isAddingDistrictComment = editingComments[`${districtCommentKey}-new`];
 
@@ -261,6 +273,11 @@ const VotingDistrict = ({
                 </span>
               )}
             </span>
+            {districtCheckData.lastUpdated && (
+              <div className="last-updated">
+                最終更新: {formatDateTime(districtCheckData.lastUpdated)}
+              </div>
+            )}
           </div>
           <button
             className={`district-toggle ${isExpanded ? 'expanded' : ''}`}
@@ -404,6 +421,7 @@ const VotingDistrict = ({
         <div className="locations-list">
           {locations.map(location => {
             const locationKey = `${districtId}-${location.number}`;
+            const locationCheckData = checkStates[locationKey] || { checked: false, lastUpdated: null };
             const locationComments = Array.isArray(memos[locationKey]) ? memos[locationKey] : 
               (memos[locationKey] ? [{ id: '1', text: memos[locationKey], timestamp: new Date().toISOString() }] : []);
             const isAddingLocationComment = editingComments[`${locationKey}-new`];
@@ -414,7 +432,7 @@ const VotingDistrict = ({
                   <input
                     type="checkbox"
                     className="location-checkbox"
-                    checked={checkStates[locationKey] || false}
+                    checked={locationCheckData.checked || false}
                     onChange={(e) => handleLocationCheckboxChange(location, e.target.checked)}
                   />
                   <div className="location-info">
@@ -429,6 +447,11 @@ const VotingDistrict = ({
                     </button>
                     {location.remark && (
                       <div className="location-remark">備考: {location.remark}</div>
+                    )}
+                    {locationCheckData.lastUpdated && (
+                      <div className="last-updated small">
+                        最終更新: {formatDateTime(locationCheckData.lastUpdated)}
+                      </div>
                     )}
                   </div>
                 </div>

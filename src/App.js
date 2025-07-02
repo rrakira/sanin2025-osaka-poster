@@ -85,9 +85,33 @@ function App() {
           loadStatesFromAPI('suita')
         ]);
         
+        // チェック状態を新しいフォーマットに変換
+        const convertCheckStates = (states) => {
+          const converted = {};
+          for (const [key, value] of Object.entries(states || {})) {
+            if (typeof value === 'boolean') {
+              // 既存の単純なboolean値を新しいフォーマットに変換
+              converted[key] = {
+                checked: value,
+                lastUpdated: null // 既存データには日時がないため null
+              };
+            } else if (typeof value === 'object' && value !== null) {
+              // 既に新しいフォーマットの場合はそのまま使用
+              converted[key] = value;
+            } else {
+              // その他の場合はfalseとして扱う
+              converted[key] = {
+                checked: false,
+                lastUpdated: null
+              };
+            }
+          }
+          return converted;
+        };
+
         setCheckStates({
-          minoo: minooStates.checkStates || {},
-          suita: suitaStates.checkStates || {}
+          minoo: convertCheckStates(minooStates.checkStates),
+          suita: convertCheckStates(suitaStates.checkStates)
         });
         
         setMemos({
@@ -154,12 +178,17 @@ function App() {
   };
 
   const updateCheckState = (city, districtId, locationId, checked) => {
-    // ローカル状態を即座に更新
+    const timestamp = new Date().toISOString();
+    
+    // ローカル状態を即座に更新（日時情報付き）
     setCheckStates(prev => ({
       ...prev,
       [city]: {
         ...prev[city],
-        [`${districtId}-${locationId || 'district'}`]: checked
+        [`${districtId}-${locationId || 'district'}`]: {
+          checked: checked,
+          lastUpdated: timestamp
+        }
       }
     }));
     

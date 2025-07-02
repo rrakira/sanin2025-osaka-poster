@@ -592,6 +592,24 @@
   font-style: italic;
 }
 
+/* 最終更新日時のスタイル */
+.last-updated {
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-style: italic;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(10, 72, 52, 0.05);
+  border-radius: 0.25rem;
+  border-left: 3px solid #0A4834;
+}
+
+.last-updated.small {
+  font-size: 0.625rem;
+  margin-top: 0.25rem;
+  padding: 0.125rem 0.375rem;
+}
+
 .comment-actions {
   display: flex;
   gap: 0.375rem;
