@@ -5,7 +5,7 @@ import './App.css';
 const API_BASE_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('minoo');
+  const [activeTab, setActiveTab] = useState('suita');
   const [data, setData] = useState({ minoo: [], suita: [] });
   const [loading, setLoading] = useState(true);
   const [checkStates, setCheckStates] = useState({
@@ -196,16 +196,16 @@ function App() {
         <h1>参院選2025 大阪府<br />選挙ポスター貼り付け状況</h1>
         <div className="tabs">
           <button 
-            className={`tab ${activeTab === 'minoo' ? 'active' : ''}`}
-            onClick={() => setActiveTab('minoo')}
-          >
-            箕面市
-          </button>
-          <button 
             className={`tab ${activeTab === 'suita' ? 'active' : ''}`}
             onClick={() => setActiveTab('suita')}
           >
             吹田市
+          </button>
+          <button 
+            className={`tab ${activeTab === 'minoo' ? 'active' : ''}`}
+            onClick={() => setActiveTab('minoo')}
+          >
+            箕面市
           </button>
         </div>
       </header>
