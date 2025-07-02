@@ -7,7 +7,9 @@ const VotingDistrictsList = ({
   checkStates, 
   memos, 
   onCheckStateChange, 
-  onMemoChange 
+  onMemoChange,
+  onRefresh,
+  isRefreshing
 }) => {
   // Google Mapsリンクデータ
   const mapsLinksData = {
@@ -49,7 +51,8 @@ const VotingDistrictsList = ({
       // チェック済みの掲示場所をカウント
       locations.forEach(location => {
         const locationKey = `${districtId}-${location.number}`;
-        if (checkStates[locationKey]) {
+        const checkData = checkStates[locationKey];
+        if (checkData?.checked) {
           completedLocations++;
         }
       });
@@ -87,6 +90,14 @@ const VotingDistrictsList = ({
             <span className="progress-text">
               {progress.completed}/{progress.total} 箇所完了 ({progress.percentage}%)
             </span>
+            <button
+              className={`refresh-button ${isRefreshing ? 'refreshing' : ''}`}
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              title="最新の状況に更新"
+            >
+              {isRefreshing ? '🔄 更新中...' : '🔄 更新'}
+            </button>
           </div>
           <div className="progress-bar-container">
             <div className="progress-bar">

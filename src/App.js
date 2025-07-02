@@ -16,6 +16,7 @@ function App() {
     minoo: {},
     suita: {}
   });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // CSVデータをJSONに変換する関数
   const csvToJson = (csvText) => {
@@ -210,6 +211,58 @@ function App() {
     updateMemoAPI(city, districtId, locationId, memo);
   };
 
+  // 最新データを取得する更新機能
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      // APIから最新の状態データを読み込み
+      const [minooStates, suitaStates] = await Promise.all([
+        loadStatesFromAPI('minoo'),
+        loadStatesFromAPI('suita')
+      ]);
+
+      // チェック状態を新しいフォーマットに変換
+      const convertCheckStates = (states) => {
+        const converted = {};
+        for (const [key, value] of Object.entries(states || {})) {
+          if (typeof value === 'boolean') {
+            // 既存の単純なboolean値を新しいフォーマットに変換
+            converted[key] = {
+              checked: value,
+              lastUpdated: null // 既存データには日時がないため null
+            };
+          } else if (typeof value === 'object' && value !== null) {
+            // 既に新しいフォーマットの場合はそのまま使用
+            converted[key] = value;
+          } else {
+            // その他の場合はfalseとして扱う
+            converted[key] = {
+              checked: false,
+              lastUpdated: null
+            };
+          }
+        }
+        return converted;
+      };
+
+      setCheckStates({
+        minoo: convertCheckStates(minooStates.checkStates),
+        suita: convertCheckStates(suitaStates.checkStates)
+      });
+
+      setMemos({
+        minoo: minooStates.memos || {},
+        suita: suitaStates.memos || {}
+      });
+
+    } catch (error) {
+      console.error('データの更新に失敗しました:', error);
+      alert('データの更新に失敗しました。もう一度お試しください。');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading">
@@ -247,6 +300,8 @@ function App() {
           memos={memos[activeTab] || {}}
           onCheckStateChange={updateCheckState}
           onMemoChange={updateMemo}
+          onRefresh={refreshData}
+          isRefreshing={isRefreshing}
         />
       </main>
     </div>

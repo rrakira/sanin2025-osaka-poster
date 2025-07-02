@@ -445,9 +445,7 @@ const VotingDistrict = ({
                     >
                       {copySuccess[locationKey] ? '✅ コピー済み' : '📍 住所をコピー'}
                     </button>
-                    {location.remark && (
-                      <div className="location-remark">備考: {location.remark}</div>
-                    )}
+
                     {locationCheckData.lastUpdated && (
                       <div className="last-updated small">
                         最終更新: {formatDateTime(locationCheckData.lastUpdated)}
