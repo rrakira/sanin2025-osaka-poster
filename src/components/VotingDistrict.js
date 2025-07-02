@@ -18,8 +18,9 @@ const VotingDistrict = ({
   const districtKey = `${districtId}-district`;
   const isDistrictChecked = checkStates[districtKey] || false;
   
-  // 投票区のコメントを取得
-  const districtComment = memos[districtKey] || '';
+  // 投票区のコメントを取得（配列形式）
+  const districtComments = Array.isArray(memos[districtKey]) ? memos[districtKey] : 
+    (memos[districtKey] ? [{ id: '1', text: memos[districtKey], timestamp: new Date().toISOString() }] : []);
   
   // 全ての掲示場所がチェック済みかどうかを確認
   const allLocationsChecked = locations.every(location => 
@@ -54,29 +55,97 @@ const VotingDistrict = ({
     onCheckStateChange(city, districtId, location.number, checked);
   };
 
-  // コメント編集開始
-  const startEditingComment = (key, currentComment) => {
-    setEditingComments(prev => ({ ...prev, [key]: true }));
-    setTempComments(prev => ({ ...prev, [key]: currentComment }));
+  // 日時フォーマット関数
+  const formatDateTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  // コメント保存
-  const saveComment = (key, isDistrict = false) => {
-    const comment = tempComments[key] || '';
+  // 新しいコメント追加開始
+  const startAddingComment = (key) => {
+    setEditingComments(prev => ({ ...prev, [`${key}-new`]: true }));
+    setTempComments(prev => ({ ...prev, [`${key}-new`]: '' }));
+  };
+
+  // コメント編集開始
+  const startEditingComment = (key, commentId, currentText) => {
+    setEditingComments(prev => ({ ...prev, [`${key}-edit-${commentId}`]: true }));
+    setTempComments(prev => ({ ...prev, [`${key}-edit-${commentId}`]: currentText }));
+  };
+
+  // 新しいコメント保存
+  const saveNewComment = (key, isDistrict = false) => {
+    const text = tempComments[`${key}-new`] || '';
+    if (!text.trim()) return;
+
+    const currentComments = Array.isArray(memos[key]) ? memos[key] : [];
+    const newComment = {
+      id: Date.now().toString(),
+      text: text.trim(),
+      timestamp: new Date().toISOString()
+    };
+    
+    const updatedComments = [...currentComments, newComment];
+    
     if (isDistrict) {
-      onMemoChange(city, districtId, null, comment);
+      onMemoChange(city, districtId, null, updatedComments);
     } else {
       const locationNumber = key.split('-').pop();
-      onMemoChange(city, districtId, locationNumber, comment);
+      onMemoChange(city, districtId, locationNumber, updatedComments);
     }
-    setEditingComments(prev => ({ ...prev, [key]: false }));
-    setTempComments(prev => ({ ...prev, [key]: '' }));
+    
+    setEditingComments(prev => ({ ...prev, [`${key}-new`]: false }));
+    setTempComments(prev => ({ ...prev, [`${key}-new`]: '' }));
   };
 
-  // コメント編集キャンセル
-  const cancelEditComment = (key) => {
-    setEditingComments(prev => ({ ...prev, [key]: false }));
-    setTempComments(prev => ({ ...prev, [key]: '' }));
+  // コメント編集保存
+  const saveEditComment = (key, commentId, isDistrict = false) => {
+    const newText = tempComments[`${key}-edit-${commentId}`] || '';
+    if (!newText.trim()) return;
+
+    const currentComments = Array.isArray(memos[key]) ? memos[key] : [];
+    const updatedComments = currentComments.map(comment => 
+      comment.id === commentId 
+        ? { ...comment, text: newText.trim(), timestamp: new Date().toISOString() }
+        : comment
+    );
+    
+    if (isDistrict) {
+      onMemoChange(city, districtId, null, updatedComments);
+    } else {
+      const locationNumber = key.split('-').pop();
+      onMemoChange(city, districtId, locationNumber, updatedComments);
+    }
+    
+    setEditingComments(prev => ({ ...prev, [`${key}-edit-${commentId}`]: false }));
+    setTempComments(prev => ({ ...prev, [`${key}-edit-${commentId}`]: '' }));
+  };
+
+  // コメント削除
+  const deleteComment = (key, commentId, isDistrict = false) => {
+    if (!window.confirm('このコメントを削除しますか？')) return;
+
+    const currentComments = Array.isArray(memos[key]) ? memos[key] : [];
+    const updatedComments = currentComments.filter(comment => comment.id !== commentId);
+    
+    if (isDistrict) {
+      onMemoChange(city, districtId, null, updatedComments);
+    } else {
+      const locationNumber = key.split('-').pop();
+      onMemoChange(city, districtId, locationNumber, updatedComments);
+    }
+  };
+
+  // 編集キャンセル
+  const cancelEdit = (editKey) => {
+    setEditingComments(prev => ({ ...prev, [editKey]: false }));
+    setTempComments(prev => ({ ...prev, [editKey]: '' }));
   };
 
   // 投票区ヘッダーのクリック処理（トグル）
@@ -128,7 +197,7 @@ const VotingDistrict = ({
   ).length;
 
   const districtCommentKey = `district-${districtId}`;
-  const isEditingDistrictComment = editingComments[districtCommentKey];
+  const isAddingDistrictComment = editingComments[`${districtCommentKey}-new`];
 
   return (
     <div className="voting-district">
@@ -167,68 +236,129 @@ const VotingDistrict = ({
         </div>
         
         <div className="district-actions">
-          {/* コメント機能 */}
-          {!districtComment && !isEditingDistrictComment && (
-            <button
-              className="comment-button"
-              onClick={(e) => {
-                e.stopPropagation();
-                startEditingComment(districtCommentKey, '');
-              }}
-            >
-              💬 コメント追加
-            </button>
-          )}
-          
-          {districtComment && !isEditingDistrictComment && (
-            <div className="comment-display">
-              <span className="comment-text">{districtComment}</span>
+          {/* 投票区のコメント機能 */}
+          <div className="comments-section">
+            {/* 既存のコメント表示 */}
+            {districtComments.map(comment => {
+              const editKey = `${districtCommentKey}-edit-${comment.id}`;
+              const isEditing = editingComments[editKey];
+              
+              return (
+                <div key={comment.id} className="comment-item">
+                  {!isEditing ? (
+                    <div className="comment-display">
+                      <div className="comment-content">
+                        <div className="comment-text">{comment.text}</div>
+                        <div className="comment-timestamp">
+                          {formatDateTime(comment.timestamp)}
+                        </div>
+                      </div>
+                      <div className="comment-actions">
+                        <button
+                          className="comment-edit-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEditingComment(districtCommentKey, comment.id, comment.text);
+                          }}
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          className="comment-delete-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteComment(districtCommentKey, comment.id, true);
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="comment-editor">
+                      <textarea
+                        className="comment-input"
+                        value={tempComments[editKey] || ''}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setTempComments(prev => ({ ...prev, [editKey]: e.target.value }));
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div className="comment-buttons">
+                        <button
+                          className="comment-save-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            saveEditComment(districtCommentKey, comment.id, true);
+                          }}
+                        >
+                          保存
+                        </button>
+                        <button
+                          className="comment-cancel-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            cancelEdit(editKey);
+                          }}
+                        >
+                          取り消し
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            
+            {/* 新しいコメント追加 */}
+            {!isAddingDistrictComment && (
               <button
-                className="comment-edit-button"
+                className="comment-add-button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  startEditingComment(districtCommentKey, districtComment);
+                  startAddingComment(districtCommentKey);
                 }}
               >
-                ✏️
+                💬 コメント追加
               </button>
-            </div>
-          )}
-          
-          {isEditingDistrictComment && (
-            <div className="comment-editor">
-              <textarea
-                className="comment-input"
-                placeholder="投票区のコメントを入力..."
-                value={tempComments[districtCommentKey] || ''}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  setTempComments(prev => ({ ...prev, [districtCommentKey]: e.target.value }));
-                }}
-                onClick={(e) => e.stopPropagation()}
-              />
-              <div className="comment-buttons">
-                <button
-                  className="comment-save-button"
-                  onClick={(e) => {
+            )}
+            
+            {isAddingDistrictComment && (
+              <div className="comment-editor">
+                <textarea
+                  className="comment-input"
+                  placeholder="投票区のコメントを入力..."
+                  value={tempComments[`${districtCommentKey}-new`] || ''}
+                  onChange={(e) => {
                     e.stopPropagation();
-                    saveComment(districtCommentKey, true);
+                    setTempComments(prev => ({ ...prev, [`${districtCommentKey}-new`]: e.target.value }));
                   }}
-                >
-                  保存
-                </button>
-                <button
-                  className="comment-cancel-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    cancelEditComment(districtCommentKey);
-                  }}
-                >
-                  取り消し
-                </button>
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <div className="comment-buttons">
+                  <button
+                    className="comment-save-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      saveNewComment(districtCommentKey, true);
+                    }}
+                  >
+                    保存
+                  </button>
+                  <button
+                    className="comment-cancel-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      cancelEdit(`${districtCommentKey}-new`);
+                    }}
+                  >
+                    取り消し
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -236,9 +366,9 @@ const VotingDistrict = ({
         <div className="locations-list">
           {locations.map(location => {
             const locationKey = `${districtId}-${location.number}`;
-            const locationCommentKey = `location-${locationKey}`;
-            const locationComment = memos[locationKey] || '';
-            const isEditingLocationComment = editingComments[locationCommentKey];
+            const locationComments = Array.isArray(memos[locationKey]) ? memos[locationKey] : 
+              (memos[locationKey] ? [{ id: '1', text: memos[locationKey], timestamp: new Date().toISOString() }] : []);
+            const isAddingLocationComment = editingComments[`${locationKey}-new`];
 
             return (
               <div key={location.number} className="location-item">
@@ -267,66 +397,126 @@ const VotingDistrict = ({
                 
                 <div className="location-actions">
                   {/* 掲示場所のコメント機能 */}
-                  {!locationComment && !isEditingLocationComment && (
-                    <button
-                      className="comment-button small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startEditingComment(locationCommentKey, '');
-                      }}
-                    >
-                      💬 コメント追加
-                    </button>
-                  )}
-                  
-                  {locationComment && !isEditingLocationComment && (
-                    <div className="comment-display small">
-                      <span className="comment-text">{locationComment}</span>
+                  <div className="comments-section small">
+                    {/* 既存のコメント表示 */}
+                    {locationComments.map(comment => {
+                      const editKey = `${locationKey}-edit-${comment.id}`;
+                      const isEditing = editingComments[editKey];
+                      
+                      return (
+                        <div key={comment.id} className="comment-item small">
+                          {!isEditing ? (
+                            <div className="comment-display small">
+                              <div className="comment-content">
+                                <div className="comment-text">{comment.text}</div>
+                                <div className="comment-timestamp">
+                                  {formatDateTime(comment.timestamp)}
+                                </div>
+                              </div>
+                              <div className="comment-actions">
+                                <button
+                                  className="comment-edit-button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditingComment(locationKey, comment.id, comment.text);
+                                  }}
+                                >
+                                  ✏️
+                                </button>
+                                <button
+                                  className="comment-delete-button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteComment(locationKey, comment.id, false);
+                                  }}
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="comment-editor small">
+                              <textarea
+                                className="comment-input small"
+                                value={tempComments[editKey] || ''}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  setTempComments(prev => ({ ...prev, [editKey]: e.target.value }));
+                                }}
+                              />
+                              <div className="comment-buttons">
+                                <button
+                                  className="comment-save-button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    saveEditComment(locationKey, comment.id, false);
+                                  }}
+                                >
+                                  保存
+                                </button>
+                                <button
+                                  className="comment-cancel-button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    cancelEdit(editKey);
+                                  }}
+                                >
+                                  取り消し
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    
+                    {/* 新しいコメント追加 */}
+                    {!isAddingLocationComment && (
                       <button
-                        className="comment-edit-button"
+                        className="comment-add-button small"
                         onClick={(e) => {
                           e.stopPropagation();
-                          startEditingComment(locationCommentKey, locationComment);
+                          startAddingComment(locationKey);
                         }}
                       >
-                        ✏️
+                        💬 コメント追加
                       </button>
-                    </div>
-                  )}
-                  
-                  {isEditingLocationComment && (
-                    <div className="comment-editor small">
-                      <textarea
-                        className="comment-input small"
-                        placeholder="コメントを入力..."
-                        value={tempComments[locationCommentKey] || ''}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          setTempComments(prev => ({ ...prev, [locationCommentKey]: e.target.value }));
-                        }}
-                      />
-                      <div className="comment-buttons">
-                        <button
-                          className="comment-save-button"
-                          onClick={(e) => {
+                    )}
+                    
+                    {isAddingLocationComment && (
+                      <div className="comment-editor small">
+                        <textarea
+                          className="comment-input small"
+                          placeholder="コメントを入力..."
+                          value={tempComments[`${locationKey}-new`] || ''}
+                          onChange={(e) => {
                             e.stopPropagation();
-                            saveComment(locationCommentKey, false);
+                            setTempComments(prev => ({ ...prev, [`${locationKey}-new`]: e.target.value }));
                           }}
-                        >
-                          保存
-                        </button>
-                        <button
-                          className="comment-cancel-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            cancelEditComment(locationCommentKey);
-                          }}
-                        >
-                          取り消し
-                        </button>
+                        />
+                        <div className="comment-buttons">
+                          <button
+                            className="comment-save-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              saveNewComment(locationKey, false);
+                            }}
+                          >
+                            保存
+                          </button>
+                          <button
+                            className="comment-cancel-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              cancelEdit(`${locationKey}-new`);
+                            }}
+                          >
+                            取り消し
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             );
