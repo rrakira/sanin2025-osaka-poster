@@ -10,15 +10,16 @@ const VotingDistrict = ({
   onMemoChange 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [showMemos, setShowMemos] = useState({});
+  const [editingComments, setEditingComments] = useState({});
+  const [tempComments, setTempComments] = useState({});
   const [copySuccess, setCopySuccess] = useState({});
   
   // 投票区のチェック状態を取得
   const districtKey = `${districtId}-district`;
   const isDistrictChecked = checkStates[districtKey] || false;
   
-  // 投票区のメモを取得
-  const districtMemo = memos[districtKey] || '';
+  // 投票区のコメントを取得
+  const districtComment = memos[districtKey] || '';
   
   // 全ての掲示場所がチェック済みかどうかを確認
   const allLocationsChecked = locations.every(location => 
@@ -53,14 +54,29 @@ const VotingDistrict = ({
     onCheckStateChange(city, districtId, location.number, checked);
   };
 
-  // 投票区メモの変更処理
-  const handleDistrictMemoChange = (e) => {
-    onMemoChange(city, districtId, null, e.target.value);
+  // コメント編集開始
+  const startEditingComment = (key, currentComment) => {
+    setEditingComments(prev => ({ ...prev, [key]: true }));
+    setTempComments(prev => ({ ...prev, [key]: currentComment }));
   };
 
-  // 掲示場所メモの変更処理
-  const handleLocationMemoChange = (location, memo) => {
-    onMemoChange(city, districtId, location.number, memo);
+  // コメント保存
+  const saveComment = (key, isDistrict = false) => {
+    const comment = tempComments[key] || '';
+    if (isDistrict) {
+      onMemoChange(city, districtId, null, comment);
+    } else {
+      const locationNumber = key.split('-').pop();
+      onMemoChange(city, districtId, locationNumber, comment);
+    }
+    setEditingComments(prev => ({ ...prev, [key]: false }));
+    setTempComments(prev => ({ ...prev, [key]: '' }));
+  };
+
+  // コメント編集キャンセル
+  const cancelEditComment = (key) => {
+    setEditingComments(prev => ({ ...prev, [key]: false }));
+    setTempComments(prev => ({ ...prev, [key]: '' }));
   };
 
   // 投票区ヘッダーのクリック処理（トグル）
@@ -78,13 +94,6 @@ const VotingDistrict = ({
       checkbox.indeterminate = districtCheckboxState === 'indeterminate';
     }
   }, [districtCheckboxState, districtId]);
-
-  // メモがある場合は自動でメモ欄を表示
-  useEffect(() => {
-    if (districtMemo) {
-      setShowMemos(prev => ({ ...prev, [`district-${districtId}`]: true }));
-    }
-  }, [districtMemo, districtId]);
 
   // 住所をクリップボードにコピー
   const copyAddress = async (address, locationId) => {
@@ -118,7 +127,8 @@ const VotingDistrict = ({
     checkStates[`${districtId}-${location.number}`]
   ).length;
 
-  const shouldShowDistrictMemo = showMemos[`district-${districtId}`] || districtMemo;
+  const districtCommentKey = `district-${districtId}`;
+  const isEditingDistrictComment = editingComments[districtCommentKey];
 
   return (
     <div className="voting-district">
@@ -157,39 +167,66 @@ const VotingDistrict = ({
         </div>
         
         <div className="district-actions">
-          {!shouldShowDistrictMemo && (
+          {/* コメント機能 */}
+          {!districtComment && !isEditingDistrictComment && (
             <button
-              className="memo-button"
+              className="comment-button"
               onClick={(e) => {
                 e.stopPropagation();
-                setShowMemos(prev => ({ ...prev, [`district-${districtId}`]: true }));
+                startEditingComment(districtCommentKey, '');
               }}
             >
-              📝 メモを追加
+              💬 コメント追加
             </button>
           )}
           
-          {shouldShowDistrictMemo && (
-            <div className="district-memo">
-              <textarea
-                className="memo-input"
-                placeholder="投票区のメモを入力..."
-                value={districtMemo}
-                onChange={handleDistrictMemoChange}
-                onClick={(e) => e.stopPropagation()}
-              />
+          {districtComment && !isEditingDistrictComment && (
+            <div className="comment-display">
+              <span className="comment-text">{districtComment}</span>
               <button
-                className="memo-close"
+                className="comment-edit-button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (!districtMemo) {
-                    setShowMemos(prev => ({ ...prev, [`district-${districtId}`]: false }));
-                  }
+                  startEditingComment(districtCommentKey, districtComment);
                 }}
-                title="メモを閉じる"
               >
-                ×
+                ✏️
               </button>
+            </div>
+          )}
+          
+          {isEditingDistrictComment && (
+            <div className="comment-editor">
+              <textarea
+                className="comment-input"
+                placeholder="投票区のコメントを入力..."
+                value={tempComments[districtCommentKey] || ''}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setTempComments(prev => ({ ...prev, [districtCommentKey]: e.target.value }));
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <div className="comment-buttons">
+                <button
+                  className="comment-save-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    saveComment(districtCommentKey, true);
+                  }}
+                >
+                  保存
+                </button>
+                <button
+                  className="comment-cancel-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cancelEditComment(districtCommentKey);
+                  }}
+                >
+                  取り消し
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -199,9 +236,9 @@ const VotingDistrict = ({
         <div className="locations-list">
           {locations.map(location => {
             const locationKey = `${districtId}-${location.number}`;
-            const locationMemoKey = `${districtId}-${location.number}`;
-            const hasLocationMemo = memos[locationMemoKey] && memos[locationMemoKey].trim() !== '';
-            const shouldShowLocationMemo = showMemos[`location-${locationKey}`] || hasLocationMemo;
+            const locationCommentKey = `location-${locationKey}`;
+            const locationComment = memos[locationKey] || '';
+            const isEditingLocationComment = editingComments[locationCommentKey];
 
             return (
               <div key={location.number} className="location-item">
@@ -229,41 +266,68 @@ const VotingDistrict = ({
                 </div>
                 
                 <div className="location-actions">
-                  {!shouldShowLocationMemo && (
+                  {/* 掲示場所のコメント機能 */}
+                  {!locationComment && !isEditingLocationComment && (
                     <button
-                      className="memo-button small"
+                      className="comment-button small"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setShowMemos(prev => ({ ...prev, [`location-${locationKey}`]: true }));
+                        startEditingComment(locationCommentKey, '');
                       }}
                     >
-                      📝 メモを追加
+                      💬 コメント追加
                     </button>
                   )}
+                  
+                  {locationComment && !isEditingLocationComment && (
+                    <div className="comment-display small">
+                      <span className="comment-text">{locationComment}</span>
+                      <button
+                        className="comment-edit-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEditingComment(locationCommentKey, locationComment);
+                        }}
+                      >
+                        ✏️
+                      </button>
+                    </div>
+                  )}
+                  
+                  {isEditingLocationComment && (
+                    <div className="comment-editor small">
+                      <textarea
+                        className="comment-input small"
+                        placeholder="コメントを入力..."
+                        value={tempComments[locationCommentKey] || ''}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setTempComments(prev => ({ ...prev, [locationCommentKey]: e.target.value }));
+                        }}
+                      />
+                      <div className="comment-buttons">
+                        <button
+                          className="comment-save-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            saveComment(locationCommentKey, false);
+                          }}
+                        >
+                          保存
+                        </button>
+                        <button
+                          className="comment-cancel-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            cancelEditComment(locationCommentKey);
+                          }}
+                        >
+                          取り消し
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                {shouldShowLocationMemo && (
-                  <div className="location-memo">
-                    <textarea
-                      className="memo-input small"
-                      placeholder="メモを入力..."
-                      value={memos[locationMemoKey] || ''}
-                      onChange={(e) => handleLocationMemoChange(location, e.target.value)}
-                    />
-                    <button
-                      className="memo-close"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!memos[locationMemoKey]) {
-                          setShowMemos(prev => ({ ...prev, [`location-${locationKey}`]: false }));
-                        }
-                      }}
-                      title="メモを閉じる"
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
               </div>
             );
           })}
