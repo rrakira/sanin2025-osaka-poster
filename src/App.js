@@ -17,6 +17,8 @@ function App() {
     suita: {}
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [isEditingAnything, setIsEditingAnything] = useState(false);
 
   // CSVデータをJSONに変換する関数
   const csvToJson = (csvText) => {
@@ -212,8 +214,8 @@ function App() {
   };
 
   // 最新データを取得する更新機能
-  const refreshData = async () => {
-    setIsRefreshing(true);
+  const refreshData = async (silent = false) => {
+    if (!silent) setIsRefreshing(true);
     try {
       // APIから最新の状態データを読み込み
       const [minooStates, suitaStates] = await Promise.all([
@@ -257,10 +259,48 @@ function App() {
 
     } catch (error) {
       console.error('データの更新に失敗しました:', error);
-      alert('データの更新に失敗しました。もう一度お試しください。');
+      if (!silent) {
+        alert('データの更新に失敗しました。もう一度お試しください。');
+      }
+      // エラー時は自動更新を一時停止
+      setAutoRefreshEnabled(false);
+      setTimeout(() => setAutoRefreshEnabled(true), 60000); // 1分後に再開
     } finally {
-      setIsRefreshing(false);
+      if (!silent) setIsRefreshing(false);
     }
+  };
+
+  // 自動更新機能
+  useEffect(() => {
+    if (!autoRefreshEnabled || isEditingAnything || loading) {
+      return;
+    }
+
+    // Page Visibility APIを使用してページがアクティブな時のみ実行
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && autoRefreshEnabled && !isEditingAnything) {
+        refreshData(true); // サイレント更新
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // 30秒間隔で自動更新
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible' && !isEditingAnything && !isRefreshing) {
+        refreshData(true); // サイレント更新
+      }
+    }, 30000);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [autoRefreshEnabled, isEditingAnything, loading, isRefreshing]);
+
+  // 編集状態を管理する関数
+  const setEditingState = (isEditing) => {
+    setIsEditingAnything(isEditing);
   };
 
   if (loading) {
@@ -302,6 +342,9 @@ function App() {
           onMemoChange={updateMemo}
           onRefresh={refreshData}
           isRefreshing={isRefreshing}
+          autoRefreshEnabled={autoRefreshEnabled}
+          setAutoRefreshEnabled={setAutoRefreshEnabled}
+          onEditingStateChange={setEditingState}
         />
       </main>
     </div>

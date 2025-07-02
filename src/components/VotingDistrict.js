@@ -7,7 +7,8 @@ const VotingDistrict = ({
   checkStates, 
   memos, 
   onCheckStateChange, 
-  onMemoChange 
+  onMemoChange,
+  onEditingStateChange
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [editingComments, setEditingComments] = useState({});
@@ -213,6 +214,14 @@ const VotingDistrict = ({
       checkbox.indeterminate = districtCheckboxState === 'indeterminate';
     }
   }, [districtCheckboxState, districtId]);
+
+  // 編集状態を親コンポーネントに通知
+  useEffect(() => {
+    const isAnyEditing = Object.values(editingComments).some(isEditing => isEditing);
+    if (onEditingStateChange) {
+      onEditingStateChange(isAnyEditing);
+    }
+  }, [editingComments, onEditingStateChange]);
 
   // 住所をクリップボードにコピー
   const copyAddress = async (address, locationId) => {

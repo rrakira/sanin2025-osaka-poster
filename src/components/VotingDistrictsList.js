@@ -9,7 +9,10 @@ const VotingDistrictsList = ({
   onCheckStateChange, 
   onMemoChange,
   onRefresh,
-  isRefreshing
+  isRefreshing,
+  autoRefreshEnabled,
+  setAutoRefreshEnabled,
+  onEditingStateChange
 }) => {
   // Google Mapsリンクデータ
   const mapsLinksData = {
@@ -90,14 +93,23 @@ const VotingDistrictsList = ({
             <span className="progress-text">
               {progress.completed}/{progress.total} 箇所完了 ({progress.percentage}%)
             </span>
-            <button
-              className={`refresh-button ${isRefreshing ? 'refreshing' : ''}`}
-              onClick={onRefresh}
-              disabled={isRefreshing}
-              title="最新の状況に更新"
-            >
-              {isRefreshing ? '🔄 更新中...' : '🔄 更新'}
-            </button>
+            <div className="refresh-controls">
+              <button
+                className={`refresh-button ${isRefreshing ? 'refreshing' : ''}`}
+                onClick={() => onRefresh(false)}
+                disabled={isRefreshing}
+                title="最新の状況に更新"
+              >
+                {isRefreshing ? '🔄 更新中...' : '🔄 更新'}
+              </button>
+              <button
+                className={`auto-refresh-toggle ${autoRefreshEnabled ? 'enabled' : 'disabled'}`}
+                onClick={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
+                title={autoRefreshEnabled ? '自動更新を停止' : '自動更新を開始'}
+              >
+                {autoRefreshEnabled ? '⏸️ 自動更新中' : '▶️ 自動更新停止'}
+              </button>
+            </div>
           </div>
           <div className="progress-bar-container">
             <div className="progress-bar">
@@ -160,6 +172,7 @@ const VotingDistrictsList = ({
             memos={memos}
             onCheckStateChange={onCheckStateChange}
             onMemoChange={onMemoChange}
+            onEditingStateChange={onEditingStateChange}
           />
         ))}
       </div>
