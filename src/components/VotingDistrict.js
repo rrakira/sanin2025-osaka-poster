@@ -18,9 +18,12 @@ const VotingDistrict = ({
   const districtKey = `${districtId}-district`;
   const isDistrictChecked = checkStates[districtKey] || false;
   
+  // 投票区のコメントキー（統一）
+  const districtCommentKey = districtKey; // `${districtId}-district`と同じ
+  
   // 投票区のコメントを取得（配列形式）
-  const districtComments = Array.isArray(memos[districtKey]) ? memos[districtKey] : 
-    (memos[districtKey] ? [{ id: '1', text: memos[districtKey], timestamp: new Date().toISOString() }] : []);
+  const districtComments = Array.isArray(memos[districtCommentKey]) ? memos[districtCommentKey] : 
+    (memos[districtCommentKey] ? [{ id: '1', text: memos[districtCommentKey], timestamp: new Date().toISOString() }] : []);
   
   // 全ての掲示場所がチェック済みかどうかを確認
   const allLocationsChecked = locations.every(location => 
@@ -84,7 +87,19 @@ const VotingDistrict = ({
     const text = tempComments[`${key}-new`] || '';
     if (!text.trim()) return;
 
-    const currentComments = Array.isArray(memos[key]) ? memos[key] : [];
+    // 既存のコメントを配列形式に変換
+    let currentComments = [];
+    if (Array.isArray(memos[key])) {
+      currentComments = memos[key];
+    } else if (memos[key] && typeof memos[key] === 'string') {
+      // 既存の文字列メモを配列に変換
+      currentComments = [{
+        id: '1',
+        text: memos[key],
+        timestamp: new Date().toISOString()
+      }];
+    }
+
     const newComment = {
       id: Date.now().toString(),
       text: text.trim(),
@@ -109,7 +124,19 @@ const VotingDistrict = ({
     const newText = tempComments[`${key}-edit-${commentId}`] || '';
     if (!newText.trim()) return;
 
-    const currentComments = Array.isArray(memos[key]) ? memos[key] : [];
+    // 既存のコメントを配列形式に変換
+    let currentComments = [];
+    if (Array.isArray(memos[key])) {
+      currentComments = memos[key];
+    } else if (memos[key] && typeof memos[key] === 'string') {
+      // 既存の文字列メモを配列に変換
+      currentComments = [{
+        id: '1',
+        text: memos[key],
+        timestamp: new Date().toISOString()
+      }];
+    }
+
     const updatedComments = currentComments.map(comment => 
       comment.id === commentId 
         ? { ...comment, text: newText.trim(), timestamp: new Date().toISOString() }
@@ -131,7 +158,19 @@ const VotingDistrict = ({
   const deleteComment = (key, commentId, isDistrict = false) => {
     if (!window.confirm('このコメントを削除しますか？')) return;
 
-    const currentComments = Array.isArray(memos[key]) ? memos[key] : [];
+    // 既存のコメントを配列形式に変換
+    let currentComments = [];
+    if (Array.isArray(memos[key])) {
+      currentComments = memos[key];
+    } else if (memos[key] && typeof memos[key] === 'string') {
+      // 既存の文字列メモを配列に変換
+      currentComments = [{
+        id: '1',
+        text: memos[key],
+        timestamp: new Date().toISOString()
+      }];
+    }
+
     const updatedComments = currentComments.filter(comment => comment.id !== commentId);
     
     if (isDistrict) {
@@ -196,7 +235,6 @@ const VotingDistrict = ({
     checkStates[`${districtId}-${location.number}`]
   ).length;
 
-  const districtCommentKey = `district-${districtId}`;
   const isAddingDistrictComment = editingComments[`${districtCommentKey}-new`];
 
   return (
