@@ -88,29 +88,32 @@ function App() {
           loadStatesFromAPI('suita')
         ]);
         
-        // チェック状態を新しいフォーマットに変換
-        const convertCheckStates = (states) => {
-          const converted = {};
-          for (const [key, value] of Object.entries(states || {})) {
-            if (typeof value === 'boolean') {
-              // 既存の単純なboolean値を新しいフォーマットに変換
-              converted[key] = {
-                checked: value,
-                lastUpdated: null // 既存データには日時がないため null
-              };
-            } else if (typeof value === 'object' && value !== null) {
-              // 既に新しいフォーマットの場合はそのまま使用
-              converted[key] = value;
-            } else {
-              // その他の場合はfalseとして扱う
-              converted[key] = {
-                checked: false,
-                lastUpdated: null
-              };
-            }
+              // チェック状態を新しいフォーマットに変換（後方互換性のため）
+      const convertCheckStates = (states) => {
+        const converted = {};
+        for (const [key, value] of Object.entries(states || {})) {
+          if (typeof value === 'boolean') {
+            // 旧APIからの単純なboolean値を新しいフォーマットに変換
+            converted[key] = {
+              checked: value,
+              lastUpdated: null
+            };
+          } else if (typeof value === 'object' && value !== null && 'checked' in value) {
+            // 新しいフォーマット（checked + lastUpdated）はそのまま使用
+            converted[key] = {
+              checked: value.checked || false,
+              lastUpdated: value.lastUpdated || null
+            };
+          } else {
+            // その他の場合はfalseとして扱う
+            converted[key] = {
+              checked: false,
+              lastUpdated: null
+            };
           }
-          return converted;
-        };
+        }
+        return converted;
+      };
 
         setCheckStates({
           minoo: convertCheckStates(minooStates.checkStates),
@@ -223,19 +226,22 @@ function App() {
         loadStatesFromAPI('suita')
       ]);
 
-      // チェック状態を新しいフォーマットに変換
+      // チェック状態を新しいフォーマットに変換（後方互換性のため）
       const convertCheckStates = (states) => {
         const converted = {};
         for (const [key, value] of Object.entries(states || {})) {
           if (typeof value === 'boolean') {
-            // 既存の単純なboolean値を新しいフォーマットに変換
+            // 旧APIからの単純なboolean値を新しいフォーマットに変換
             converted[key] = {
               checked: value,
-              lastUpdated: null // 既存データには日時がないため null
+              lastUpdated: null
             };
-          } else if (typeof value === 'object' && value !== null) {
-            // 既に新しいフォーマットの場合はそのまま使用
-            converted[key] = value;
+          } else if (typeof value === 'object' && value !== null && 'checked' in value) {
+            // 新しいフォーマット（checked + lastUpdated）はそのまま使用
+            converted[key] = {
+              checked: value.checked || false,
+              lastUpdated: value.lastUpdated || null
+            };
           } else {
             // その他の場合はfalseとして扱う
             converted[key] = {

@@ -57,7 +57,13 @@ app.get('/api/states/:city', async (req, res) => {
     
     result.rows.forEach(row => {
       const key = row.location_id ? `${row.district_id}-${row.location_id}` : `${row.district_id}-district`;
-      checkStates[key] = row.is_checked;
+      
+      // チェック状態を新しいフォーマット（checked + lastUpdated）で保存
+      checkStates[key] = {
+        checked: row.is_checked || false,
+        lastUpdated: row.updated_at ? row.updated_at.toISOString() : null
+      };
+      
       if (row.memo) {
         try {
           // メモがJSON配列として保存されている場合はパースする
@@ -124,6 +130,27 @@ app.post('/api/states/memo', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('メモ更新エラー:', err);
+    res.status(500).json({ error: 'データベースエラー' });
+  }
+});
+
+// 既存データのupdated_atフィールドを修正
+app.post('/api/fix/timestamps', async (req, res) => {
+  try {
+    // updated_atがNULLのレコードを現在時刻で更新
+    const result = await pool.query(`
+      UPDATE poster_states 
+      SET updated_at = CURRENT_TIMESTAMP 
+      WHERE updated_at IS NULL
+    `);
+    
+    res.json({ 
+      success: true, 
+      message: `${result.rowCount}件のレコードのタイムスタンプを修正しました。`,
+      fixedCount: result.rowCount 
+    });
+  } catch (err) {
+    console.error('タイムスタンプ修正エラー:', err);
     res.status(500).json({ error: 'データベースエラー' });
   }
 });
