@@ -24,12 +24,54 @@ const VotingDistrictsList = ({
       { range: '31-38', url: 'https://www.google.com/maps/d/u/0/edit?mid=1WikfiaU3YKb348Ho31I6o06QR0KuA1A&usp=sharing' }
     ],
     suita: [
-      { range: '101-110', url: 'https://www.google.com/maps/d/u/0/edit?mid=1Ot9m7j_ZzSPLGyR0EqOMH_yztiC2CfE&usp=sharing' },
-      { range: '111-133', url: 'https://www.google.com/maps/d/u/0/edit?mid=1cYBM5hzJoY37Xw9gGgheLFFO9bZmApI&usp=sharing' },
-      { range: '134-145', url: 'https://www.google.com/maps/d/u/0/edit?mid=1pTeUw-OJDJGtZxFDk0lyp41lxwPPuK0&usp=sharing' },
-      { range: '151-161', url: 'https://www.google.com/maps/d/u/0/edit?mid=1U45Y7I1QCYdVUvAXIgT-aspnvsWYg2o&usp=sharing' },
-      { range: '162-183', url: 'https://www.google.com/maps/d/u/0/edit?mid=1OE8O_NEk4nY1ede0xi5D_uKYEiOjQG4&usp=sharing' },
-      { range: '184-194', url: 'https://www.google.com/maps/d/u/0/edit?mid=1GpmSpTjw_5hQWm8GZDq4UjdD6vBf7KM&usp=sharing' }
+      { 
+        range: '101-110', 
+        url: 'https://www.google.com/maps/d/u/0/edit?mid=1Ot9m7j_ZzSPLGyR0EqOMH_yztiC2CfE&usp=sharing',
+        detailMaps: [
+          { range: '101-113', url: 'https://drive.google.com/file/d/1oguNZq_vwglenpUXxv6QvgX84wqYji4A/view?usp=drive_link' }
+        ]
+      },
+      { 
+        range: '111-133', 
+        url: 'https://www.google.com/maps/d/u/0/edit?mid=1cYBM5hzJoY37Xw9gGgheLFFO9bZmApI&usp=sharing',
+        detailMaps: [
+          { range: '101-113', url: 'https://drive.google.com/file/d/1oguNZq_vwglenpUXxv6QvgX84wqYji4A/view?usp=drive_link' },
+          { range: '121-124', url: 'https://drive.google.com/file/d/1J0U1uZwtZmOIXJaZ7yKXtf3wFLjAhxaP/view?usp=drive_link' },
+          { range: '131-137', url: 'https://drive.google.com/file/d/1bhl0q8p1NUehSQ0xa6tcape_FD35Gw7W/view?usp=drive_link' }
+        ]
+      },
+      { 
+        range: '134-145', 
+        url: 'https://www.google.com/maps/d/u/0/edit?mid=1pTeUw-OJDJGtZxFDk0lyp41lxwPPuK0&usp=sharing',
+        detailMaps: [
+          { range: '131-137', url: 'https://drive.google.com/file/d/1bhl0q8p1NUehSQ0xa6tcape_FD35Gw7W/view?usp=drive_link' },
+          { range: '141-145', url: 'https://drive.google.com/file/d/1IsUDDKVASTCDy84WhbRautFHmRtWWjYF/view?usp=drive_link' }
+        ]
+      },
+      { 
+        range: '151-161', 
+        url: 'https://www.google.com/maps/d/u/0/edit?mid=1U45Y7I1QCYdVUvAXIgT-aspnvsWYg2o&usp=sharing',
+        detailMaps: [
+          { range: '151-159', url: 'https://drive.google.com/file/d/15x4XHRtqCPpMEaEJME1zU4_GHEMela8x/view?usp=drive_link' },
+          { range: '161-169', url: 'https://drive.google.com/file/d/1QJzz8UR-T_WxcPQ182uilNIiuSHqGQ_-/view?usp=drive_link' }
+        ]
+      },
+      { 
+        range: '162-183', 
+        url: 'https://www.google.com/maps/d/u/0/edit?mid=1OE8O_NEk4nY1ede0xi5D_uKYEiOjQG4&usp=sharing',
+        detailMaps: [
+          { range: '161-169', url: 'https://drive.google.com/file/d/1QJzz8UR-T_WxcPQ182uilNIiuSHqGQ_-/view?usp=drive_link' },
+          { range: '181-188', url: 'https://drive.google.com/file/d/1eUw49_H5Vg8arSwaM4AivSScVZe8dpih/view?usp=drive_link' }
+        ]
+      },
+      { 
+        range: '184-194', 
+        url: 'https://www.google.com/maps/d/u/0/edit?mid=1GpmSpTjw_5hQWm8GZDq4UjdD6vBf7KM&usp=sharing',
+        detailMaps: [
+          { range: '181-188', url: 'https://drive.google.com/file/d/1eUw49_H5Vg8arSwaM4AivSScVZe8dpih/view?usp=drive_link' },
+          { range: '191-194', url: 'https://drive.google.com/file/d/1KCWCotUA2PE0R94tUHDEJ5LcqGduO6I9/view?usp=drive_link' }
+        ]
+      }
     ]
   };
 
@@ -138,6 +180,7 @@ const VotingDistrictsList = ({
               <tr>
                 <th>投票区</th>
                 <th>Google Maps リンク</th>
+                {city === 'suita' && <th>詳細マップ</th>}
               </tr>
             </thead>
             <tbody>
@@ -154,6 +197,29 @@ const VotingDistrictsList = ({
                       📍 地図を開く
                     </a>
                   </td>
+                  {city === 'suita' && (
+                    <td className="detail-maps-cell">
+                      {item.detailMaps ? (
+                        <div className="detail-maps-list">
+                          {item.detailMaps.map((detailMap, detailIndex) => (
+                            <div key={detailIndex} className="detail-map-item">
+                              <a 
+                                href={detailMap.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="detail-map-link"
+                                title={`詳細マップ ${detailMap.range}`}
+                              >
+                                📋 {detailMap.range}
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="no-detail-map">-</span>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
