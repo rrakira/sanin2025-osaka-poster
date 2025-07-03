@@ -12,7 +12,8 @@ const VotingDistrictsList = ({
   isRefreshing,
   autoRefreshEnabled,
   setAutoRefreshEnabled,
-  onEditingStateChange
+  onEditingStateChange,
+  onExportData
 }) => {
   // Google Mapsリンクデータ
   const mapsLinksData = {
@@ -175,6 +176,17 @@ const VotingDistrictsList = ({
             onEditingStateChange={onEditingStateChange}
           />
         ))}
+      </div>
+
+      {/* データエクスポートボタン */}
+      <div className="export-section">
+        <button
+          className="export-button"
+          onClick={onExportData}
+          title="全データをJSONファイルとしてエクスポート（パスワード保護）"
+        >
+          📁 データエクスポート
+        </button>
       </div>
     </div>
   );

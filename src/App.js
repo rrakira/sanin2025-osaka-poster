@@ -303,6 +303,86 @@ function App() {
     setIsEditingAnything(isEditing);
   };
 
+  // データエクスポート機能
+  const exportData = () => {
+    const password = prompt('エクスポート用パスワードを入力してください:');
+    if (password !== 'azuma') {
+      alert('パスワードが正しくありません。');
+      return;
+    }
+
+    try {
+      // エクスポートするデータを準備
+      const exportData = {
+        timestamp: new Date().toISOString(),
+        cities: {}
+      };
+
+      ['minoo', 'suita'].forEach(city => {
+        const cityData = data[city];
+        const cityCheckStates = checkStates[city] || {};
+        const cityMemos = memos[city] || {};
+
+        exportData.cities[city] = {
+          name: city === 'minoo' ? '箕面市' : '吹田市',
+          districts: {}
+        };
+
+        if (cityData && typeof cityData === 'object') {
+          Object.keys(cityData).forEach(districtId => {
+            const locations = cityData[districtId];
+            exportData.cities[city].districts[districtId] = {
+              locations: locations.map(location => {
+                const locationKey = `${districtId}-${location.number}`;
+                const checkData = cityCheckStates[locationKey] || { checked: false, lastUpdated: null };
+                const locationMemos = cityMemos[locationKey] || [];
+
+                return {
+                  number: location.number,
+                  name: location.name,
+                  address: location.address,
+                  remark: location.remark,
+                  isChecked: checkData.checked,
+                  lastUpdated: checkData.lastUpdated,
+                  comments: Array.isArray(locationMemos) ? locationMemos : 
+                    (locationMemos ? [{ id: '1', text: locationMemos, timestamp: new Date().toISOString() }] : [])
+                };
+              }),
+              districtComments: (() => {
+                const districtKey = `${districtId}-district`;
+                const districtCheckData = cityCheckStates[districtKey] || { checked: false, lastUpdated: null };
+                const districtMemos = cityMemos[districtKey] || [];
+                
+                return {
+                  isChecked: districtCheckData.checked,
+                  lastUpdated: districtCheckData.lastUpdated,
+                  comments: Array.isArray(districtMemos) ? districtMemos : 
+                    (districtMemos ? [{ id: '1', text: districtMemos, timestamp: new Date().toISOString() }] : [])
+                };
+              })()
+            };
+          });
+        }
+      });
+
+      // JSONファイルとしてダウンロード
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `poster-data-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      alert('データをエクスポートしました。');
+    } catch (error) {
+      console.error('エクスポートエラー:', error);
+      alert('エクスポートに失敗しました。');
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading">
@@ -345,6 +425,7 @@ function App() {
           autoRefreshEnabled={autoRefreshEnabled}
           setAutoRefreshEnabled={setAutoRefreshEnabled}
           onEditingStateChange={setEditingState}
+          onExportData={exportData}
         />
       </main>
     </div>
