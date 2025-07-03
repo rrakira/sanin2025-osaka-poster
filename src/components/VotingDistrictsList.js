@@ -179,8 +179,8 @@ const VotingDistrictsList = ({
             <thead>
               <tr>
                 <th>投票区</th>
-                <th>Google Maps リンク</th>
-                {city === 'suita' && <th>詳細マップ</th>}
+                <th>Google Maps</th>
+                {city === 'suita' && <th>詳細</th>}
               </tr>
             </thead>
             <tbody>
