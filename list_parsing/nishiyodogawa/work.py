@@ -55,7 +55,7 @@ def parse_nishiyodogawa_data(input_file):
                     name = f"{current_district_num}-{current_number} {remarks}"
                     
                     data.append({
-                        '投票区': current_voting_district,
+                        '投票区': current_district_num,
                         '番号': current_number,
                         '住所': full_address,
                         '備考': remarks,
