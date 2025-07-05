@@ -6,17 +6,19 @@ const API_BASE_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localh
 
 function App() {
   const [activeTab, setActiveTab] = useState('suita');
-  const [data, setData] = useState({ minoo: [], suita: [], ibaraki: [] });
+  const [data, setData] = useState({ minoo: [], suita: [], ibaraki: [], nishiyodogawa: [] });
   const [loading, setLoading] = useState(true);
   const [checkStates, setCheckStates] = useState({
     minoo: {},
     suita: {},
-    ibaraki: {}
+    ibaraki: {},
+    nishiyodogawa: {}
   });
   const [memos, setMemos] = useState({
     minoo: {},
     suita: {},
-    ibaraki: {}
+    ibaraki: {},
+    nishiyodogawa: {}
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
@@ -68,31 +70,36 @@ function App() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [minooResponse, suitaResponse, ibarakiResponse] = await Promise.all([
+        const [minooResponse, suitaResponse, ibarakiResponse, nishiyodogawaResponse] = await Promise.all([
           fetch('/minoo.csv'),
           fetch('/suita.csv'),
-          fetch('/ibaraki.csv')
+          fetch('/ibaraki.csv'),
+          fetch('/nishiyodogawa.csv')
         ]);
         
         const minooText = await minooResponse.text();
         const suitaText = await suitaResponse.text();
         const ibarakiText = await ibarakiResponse.text();
+        const nishiyodogawaText = await nishiyodogawaResponse.text();
         
         const minooData = csvToJson(minooText);
         const suitaData = csvToJson(suitaText);
         const ibarakiData = csvToJson(ibarakiText);
+        const nishiyodogawaData = csvToJson(nishiyodogawaText);
         
         setData({
           minoo: minooData,
           suita: suitaData,
-          ibaraki: ibarakiData
+          ibaraki: ibarakiData,
+          nishiyodogawa: nishiyodogawaData
         });
         
         // APIから状態データを読み込み
-        const [minooStates, suitaStates, ibarakiStates] = await Promise.all([
+        const [minooStates, suitaStates, ibarakiStates, nishiyodogawaStates] = await Promise.all([
           loadStatesFromAPI('minoo'),
           loadStatesFromAPI('suita'),
-          loadStatesFromAPI('ibaraki')
+          loadStatesFromAPI('ibaraki'),
+          loadStatesFromAPI('nishiyodogawa')
         ]);
         
               // チェック状態を新しいフォーマットに変換（後方互換性のため）
@@ -125,13 +132,15 @@ function App() {
         setCheckStates({
           minoo: convertCheckStates(minooStates.checkStates),
           suita: convertCheckStates(suitaStates.checkStates),
-          ibaraki: convertCheckStates(ibarakiStates.checkStates)
+          ibaraki: convertCheckStates(ibarakiStates.checkStates),
+          nishiyodogawa: convertCheckStates(nishiyodogawaStates.checkStates)
         });
         
         setMemos({
           minoo: minooStates.memos || {},
           suita: suitaStates.memos || {},
-          ibaraki: ibarakiStates.memos || {}
+          ibaraki: ibarakiStates.memos || {},
+          nishiyodogawa: nishiyodogawaStates.memos || {}
         });
         
         setLoading(false);
@@ -230,10 +239,11 @@ function App() {
     if (!silent) setIsRefreshing(true);
     try {
       // APIから最新の状態データを読み込み
-      const [minooStates, suitaStates, ibarakiStates] = await Promise.all([
+      const [minooStates, suitaStates, ibarakiStates, nishiyodogawaStates] = await Promise.all([
         loadStatesFromAPI('minoo'),
         loadStatesFromAPI('suita'),
-        loadStatesFromAPI('ibaraki')
+        loadStatesFromAPI('ibaraki'),
+        loadStatesFromAPI('nishiyodogawa')
       ]);
 
       // チェック状態を新しいフォーマットに変換（後方互換性のため）
@@ -266,13 +276,15 @@ function App() {
       setCheckStates({
         minoo: convertCheckStates(minooStates.checkStates),
         suita: convertCheckStates(suitaStates.checkStates),
-        ibaraki: convertCheckStates(ibarakiStates.checkStates)
+        ibaraki: convertCheckStates(ibarakiStates.checkStates),
+        nishiyodogawa: convertCheckStates(nishiyodogawaStates.checkStates)
       });
 
       setMemos({
         minoo: minooStates.memos || {},
         suita: suitaStates.memos || {},
-        ibaraki: ibarakiStates.memos || {}
+        ibaraki: ibarakiStates.memos || {},
+        nishiyodogawa: nishiyodogawaStates.memos || {}
       });
 
     } catch (error) {
@@ -336,13 +348,13 @@ function App() {
         cities: {}
       };
 
-      ['minoo', 'suita', 'ibaraki'].forEach(city => {
+      ['minoo', 'suita', 'ibaraki', 'nishiyodogawa'].forEach(city => {
         const cityData = data[city];
         const cityCheckStates = checkStates[city] || {};
         const cityMemos = memos[city] || {};
 
         exportData.cities[city] = {
-          name: city === 'minoo' ? '箕面市' : city === 'suita' ? '吹田市' : '茨木市',
+          name: city === 'minoo' ? '箕面市' : city === 'suita' ? '吹田市' : city === 'ibaraki' ? '茨木市' : '西淀川区',
           districts: {}
         };
 
@@ -426,6 +438,12 @@ function App() {
             onClick={() => setActiveTab('ibaraki')}
           >
             茨木市
+          </button>
+          <button 
+            className={`tab ${activeTab === 'nishiyodogawa' ? 'active' : ''}`}
+            onClick={() => setActiveTab('nishiyodogawa')}
+          >
+            西淀川区
           </button>
           <button 
             className={`tab ${activeTab === 'minoo' ? 'active' : ''}`}

@@ -33,6 +33,10 @@ const VotingDistrictsList = ({
         ]
       }
     ],
+    nishiyodogawa: [
+      { range: '1-10', url: 'https://www.google.com/maps/d/u/0/edit?mid=1Of8ZHVfYqn7SonodLtTsteroT_6q4ow&usp=sharing' },
+      { range: '1-15', url: 'https://www.google.com/maps/d/u/0/edit?mid=1f0ZYtyII-ATepdWdqzvMrrclsIPKfy0&usp=sharing' }
+    ],
     suita: [
       { 
         range: '101-110', 
@@ -124,7 +128,7 @@ const VotingDistrictsList = ({
   };
 
   const progress = calculateProgress();
-  const cityName = city === 'minoo' ? '箕面市' : city === 'suita' ? '吹田市' : '茨木市';
+  const cityName = city === 'minoo' ? '箕面市' : city === 'suita' ? '吹田市' : city === 'ibaraki' ? '茨木市' : '西淀川区';
 
   if (!data || sortedDistricts.length === 0) {
     return (
