@@ -23,6 +23,16 @@ const VotingDistrictsList = ({
       { range: '21-30', url: 'https://www.google.com/maps/d/u/0/edit?mid=1c7JX9zfwD3j2QJyzAxWoK38K3SazHik&usp=sharing' },
       { range: '31-38', url: 'https://www.google.com/maps/d/u/0/edit?mid=1WikfiaU3YKb348Ho31I6o06QR0KuA1A&usp=sharing' }
     ],
+    ibaraki: [
+      { 
+        range: '全投票区',
+        url: 'https://www.google.com/maps/d/u/0/edit?mid=1vvHeU2Nhi3cQcYzQj9-rIaX7JF5zfgk&usp=sharing',
+        detailMaps: [
+          { range: '1-30', url: 'https://drive.google.com/file/d/1naCGvX0hgwzHdrfvzAzA3Mv_DgZKVCyh/view?usp=drive_link' },
+          { range: '31-62', url: 'https://drive.google.com/file/d/1aeM-NuDYy93Mu8lHHWuCrPFvgsFdZGyk/view?usp=drive_link' }
+        ]
+      }
+    ],
     suita: [
       { 
         range: '101-110', 
@@ -114,7 +124,7 @@ const VotingDistrictsList = ({
   };
 
   const progress = calculateProgress();
-  const cityName = city === 'minoo' ? '箕面市' : '吹田市';
+  const cityName = city === 'minoo' ? '箕面市' : city === 'suita' ? '吹田市' : '茨木市';
 
   if (!data || sortedDistricts.length === 0) {
     return (
@@ -180,7 +190,7 @@ const VotingDistrictsList = ({
               <tr>
                 <th>投票区</th>
                 <th>Google Maps</th>
-                {city === 'suita' && <th>詳細</th>}
+                {(city === 'suita' || city === 'ibaraki') && <th>詳細</th>}
               </tr>
             </thead>
             <tbody>
@@ -197,7 +207,7 @@ const VotingDistrictsList = ({
                       📍 地図を開く
                     </a>
                   </td>
-                  {city === 'suita' && (
+                  {(city === 'suita' || city === 'ibaraki') && (
                     <td className="detail-maps-cell">
                       {item.detailMaps ? (
                         <div className="detail-maps-list">

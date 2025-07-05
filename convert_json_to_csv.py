@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 
 # 変換するJSONファイルのパス（ここで指定）
-JSON_FILE_PATH = "data/poster-data-export-2025-07-03 (6).json"
+JSON_FILE_PATH = "data/poster-data-export-2025-07-05 (1).json"
 
 def format_comments(comments):
     """コメントリストを文字列に変換"""
