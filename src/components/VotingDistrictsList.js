@@ -35,7 +35,7 @@ const VotingDistrictsList = ({
     ],
     nishiyodogawa: [
       { range: '1-10', url: 'https://www.google.com/maps/d/u/0/edit?mid=1Of8ZHVfYqn7SonodLtTsteroT_6q4ow&usp=sharing' },
-      { range: '1-15', url: 'https://www.google.com/maps/d/u/0/edit?mid=1f0ZYtyII-ATepdWdqzvMrrclsIPKfy0&usp=sharing' }
+      { range: '11-15', url: 'https://www.google.com/maps/d/u/0/edit?mid=1f0ZYtyII-ATepdWdqzvMrrclsIPKfy0&usp=sharing' }
     ],
     suita: [
       { 
