@@ -24,7 +24,7 @@ const initDatabase = async () => {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS poster_states (
         id SERIAL PRIMARY KEY,
-        city VARCHAR(10) NOT NULL,
+        city VARCHAR(20) NOT NULL,
         district_id VARCHAR(10) NOT NULL,
         location_id VARCHAR(10),
         is_checked BOOLEAN DEFAULT FALSE,
@@ -33,6 +33,14 @@ const initDatabase = async () => {
         UNIQUE(city, district_id, location_id)
       )
     `);
+    
+    // 既存のテーブルのカラムサイズを拡張（エラーが発生しても処理を続行）
+    try {
+      await pool.query(`ALTER TABLE poster_states ALTER COLUMN city TYPE VARCHAR(20)`);
+      console.log('cityカラムのサイズを拡張しました');
+    } catch (alterError) {
+      console.log('cityカラムのサイズ拡張をスキップしました:', alterError.message);
+    }
     console.log('データベーステーブルが初期化されました');
   } catch (err) {
     console.error('データベース初期化エラー:', err);
